@@ -57,6 +57,7 @@ private:
     string device;
     uint16_t port_to;
 	uint16_t reserved_byte;
+	uint8_t udp_pkt_id;
 
 	std::vector<uint8_t> local_mac;
 	std::vector<uint8_t> gateway_mac;

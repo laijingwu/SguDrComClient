@@ -69,9 +69,9 @@ void udp_dealer::send_u244_pkt() {
     // pkt_data.insert(pkt_data.end(), { 0x07, 0x01, 0xf4, 0x00, 0x01 } );
     // pkt_data.insert(pkt_data.end(), 3, 0x00);
     
-    for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
-        printf("%02x ", *iter);
-    printf("\n");
+//    for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
+//        printf("%02x ", *iter);
+//    printf("\n");
 }
 
 void udp_dealer::sendalive_u40_1_pkt() {
@@ -87,28 +87,73 @@ void udp_dealer::sendalive_u40_1_pkt() {
 
     //Data set
     pkt_data.push_back(0x07); // Code fixed
-    pkt_data.push_back(pkt_id); //packet id
+    pkt_data.push_back(udp_pkt_id); //packet id
     pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
-    pkt_data.insert(pkt_data.end(), { 0x0B, 0x01 }); // Step,the rare set of data is self increment
+    pkt_data.insert(pkt_data.end(), { 0x0b, 0x01 }); // Step,the rare set of data is self increment
     pkt_data.insert(pkt_data.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
 
-    pkt_data.insert(pkt_data.end(), { 0x??, 0x?? }); //Unknown but not fixed, changing data!!!(According to the reference of some related material online, it seems this set of data won't affect the process of authentication)
+    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); //Unknown but not fixed, changing data!!!(According to the reference of some related material online, it seems this set of data won't affect the process of authentication)
+
+    pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
+    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
+    pkt_data.insert(pkt_data.end(), 4, 0x00);
+    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
+    pkt_data.insert(pkt_data.end(), 4, 0x00); // Fixed, default ip addr:0.0.0.0
+    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
+    //Data set end
+
+    std::string error;
+    pcap.send_without_response(pkt_data, &error);
+    U40_1_LOG_INFO("Sent UDP package [size = 40].");
+
+    for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
+        printf("%02x ", *iter);
+    printf("\n");
+}
+
+
+void udp_dealer::sendalive_u40_2_pkt() {
+    uint16_t data_length = 40;
+    std::vector<uint8_t> pkt_data(DRCOM_U40_FRAME_SIZE - data_length, 0);
+
+    struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
+    memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+    struct iphdr ip_header = get_ip_header(source_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + data_length);
+    memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(iphdr));
+    struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
+    memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
+
+    //Data set
+    pkt_data.push_back(0x07); // Code fixed
+    pkt_data.push_back(udp_pkt_id); //packet id
+    pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
+    pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step,the rare set of data is self increment
+    pkt_data.insert(pkt_data.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
+
+    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); //Unknown but not fixed, changing data!!!(According to the reference of some related material online, it seems this set of data won't affect the process of authentication)
 
     pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
     pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
 
-    // some flux,don't know the affection temporarily
     pkt_data.insert(pkt_data.end(), 4, 0x00);
-    memcpy(&pkt_data[16], &misc1_flux, 4);
+    memcpy( &pkt_data[], &reserved_byte, 4 );  //need to certain the position to copy the data
 
-    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
-    pkt_data.insert(pkt_data.end(), 4, 0x00); // Fixed, default ip addr:0.0.0.0
-    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
+    pkt_data.insert(pkt_data.end(), 4, 0x00);
+    memcpy( &pkt_data[], &in_cksum, 4 );
 
+    pkt_data.insert( pkt_data.end(), local_ip.begin(), local_ip.end() );
 
-}
+    pkt_data.insert(pkt_data.end(), 8, 0x00);
+    //Data set end
 
-void udp_dealer::sendalive_u40_2_pkt() {
+    std::string error;
+    pcap.send_without_response(pkt_data, &error);
+    U40_2_LOG_INFO("Sent UDP package [size = 40].");
+
+    for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
+        printf("%02x ", *iter);
+    printf("\n");
+
 }
 
 void udp_dealer::sendalive_u38_pkt() {
