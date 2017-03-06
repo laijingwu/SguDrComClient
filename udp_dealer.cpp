@@ -41,9 +41,10 @@ void udp_dealer::send_u8_pkt() {
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    // Data
+    ///// Data set /////
     pkt_data.insert(pkt_data.end(), { 0x07, 0x00, 0x08, 0x00, 0x01 } );
     pkt_data.insert(pkt_data.end(), 3, 0x00);
+    ///// Data set end /////
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -66,12 +67,12 @@ void udp_dealer::send_u244_pkt() {
     // memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
     // // Data
-    // pkt_data.insert(pkt_data.end(), { 0x07, 0x01, 0xf4, 0x00, 0x01 } );
-    // pkt_data.insert(pkt_data.end(), 3, 0x00);
+    // // pkt_data.insert(pkt_data.end(), { 0x07, 0x01, 0xf4, 0x00, 0x01 } );
+    // // pkt_data.insert(pkt_data.end(), 3, 0x00);
     
-//    for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
-//        printf("%02x ", *iter);
-//    printf("\n");
+    // for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
+    //     printf("%02x ", *iter);
+    // printf("\n");
 }
 
 void udp_dealer::sendalive_u40_1_pkt() {
@@ -85,7 +86,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    //Data set
+    ///// Data set /////
     pkt_data.push_back(0x07); // Code fixed
     pkt_data.push_back(udp_pkt_id); //packet id
     pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
@@ -100,7 +101,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
     pkt_data.insert(pkt_data.end(), 4, 0x00); // Fixed, default ip addr:0.0.0.0
     pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
-    //Data set end
+    ///// Data set end /////
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -110,7 +111,6 @@ void udp_dealer::sendalive_u40_1_pkt() {
         printf("%02x ", *iter);
     printf("\n");
 }
-
 
 void udp_dealer::sendalive_u40_2_pkt() {
     uint16_t data_length = 40;
@@ -123,7 +123,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    //Data set
+    ///// Data set /////
     pkt_data.push_back(0x07); // Code fixed
     pkt_data.push_back(udp_pkt_id); //packet id
     pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
@@ -141,10 +141,10 @@ void udp_dealer::sendalive_u40_2_pkt() {
     pkt_data.insert(pkt_data.end(), 4, 0x00);
     memcpy( &pkt_data[], &in_cksum, 4 );
 
-    pkt_data.insert( pkt_data.end(), local_ip.begin(), local_ip.end() );
+    pkt_data.insert( pkt_data.end(), source_ip, 4 );
 
     pkt_data.insert(pkt_data.end(), 8, 0x00);
-    //Data set end
+    ///// Data set end /////
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -153,7 +153,6 @@ void udp_dealer::sendalive_u40_2_pkt() {
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
         printf("%02x ", *iter);
     printf("\n");
-
 }
 
 void udp_dealer::sendalive_u38_pkt() {

@@ -17,22 +17,6 @@ using namespace std;
 #define IP_HEADER_SIZE    20
 #define UDP_HEADER_SIZE    8
 
-struct pkt_u244
-	{
-		uint8_t drcom_identify;
-		uint8_t counter;
-		uint16_t data_length;
-		uint8_t unknown;
-		uint8_t username_length;
-		uint8_t local_mac[6];
-		uint8_t local_ip[4];
-		uint8_t fixedchar[4];
-		uint8_t from_firstpkt_byte[4];
-		uint8_t check[4];
-		uint8_t username[11];
-	
-};
-
 class udp_dealer
 {
 public:
@@ -50,13 +34,13 @@ public:
 	void sendalive_u38_pkt();
 
 	virtual ~udp_dealer();
-
+	
 private:
 	pcap_dealer pcap;
-	int ip_pkt_id;
+	uint8_t ip_pkt_id;
     string device;
     uint16_t port_to;
-	uint16_t reserved_byte;
+    uint16_t reserved_byte;
 	uint8_t udp_pkt_id;
 
 	std::vector<uint8_t> local_mac;
