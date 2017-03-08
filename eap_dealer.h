@@ -31,6 +31,7 @@ public:
 	bool response_identity(std::vector<uint8_t> gateway_mac);
 	bool alive_identity(std::vector<uint8_t> gateway_mac);
 	bool response_md5_challenge(std::vector<uint8_t> gateway_mac);
+	std::vector<uint8_t> md5_value;
 
 	virtual ~eap_dealer();
 

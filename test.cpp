@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 //        }
 //    }
     udp_dealer *deal = new udp_dealer(device, local_mac, local_ip, hangzhou_mac, authserver_ip, udp_alive_port);
-    deal->send_u244_pkt();
+    // deal->send_u244_pkt();
 
     printf("\n");
 

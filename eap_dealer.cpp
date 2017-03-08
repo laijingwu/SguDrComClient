@@ -200,7 +200,7 @@ bool eap_dealer::response_md5_challenge(std::vector<uint8_t> gateway_mac) {
 	memcpy(&eap_key[1], &key[0], key.size());
 	memcpy(&eap_key[1 + key.size()], &resp_md5_attach_key[0], EAP_MD5_VALUE_SIZE);
 
-	std::vector<uint8_t> md5_value = get_md5_digest(eap_key);
+	md5_value = get_md5_digest(eap_key);
 	memcpy(&pkt_data[sizeof(eth_header) + eap_resp_md5_ch.size()], &md5_value[0], md5_value.size());
 
 	memcpy(&pkt_data[sizeof(eth_header) + eap_resp_md5_ch.size() + EAP_MD5_VALUE_SIZE], &resp_md5_id[0], resp_md5_id.size());
