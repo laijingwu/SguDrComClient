@@ -55,24 +55,91 @@ void udp_dealer::send_u8_pkt() {
     printf("\n");
 }
 
-void udp_dealer::send_u244_pkt() {
-    // uint16_t data_length = 244;
-    // std::vector<uint8_t> pkt_data(DRCOM_U244_FRAME_SIZE - data_length, 0);
+void udp_dealer::send_u244_pkt(std::vector<uint8_t> local_mac, std::vector<uint8_t> login_username, string local_ip, string local_dns_1, string local_dns_2) {
+     uint16_t data_length = 244;
+     std::vector<uint8_t> pkt_data(DRCOM_U244_FRAME_SIZE - data_length, 0);
 
-    // struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
-    // memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
-    // struct iphdr ip_header = get_ip_header(source_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + data_length);
-    // memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(iphdr));
-    // struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
-    // memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
+     struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
+     memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+     struct iphdr ip_header = get_ip_header(source_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + data_length);
+     memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(iphdr));
+     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
+     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    // // Data
-    // // pkt_data.insert(pkt_data.end(), { 0x07, 0x01, 0xf4, 0x00, 0x01 } );
-    // // pkt_data.insert(pkt_data.end(), 3, 0x00);
-    
-    // for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
-    //     printf("%02x ", *iter);
-    // printf("\n");
+
+
+    ///////////////////////////////Data set begin/////////////////////////////////
+    std::vector<uint8_t> udp_data_set(data_length,0);
+
+    /****************************Packet info part********************************/
+    udp_data_set.insert(udp_data_set.end(), { 0x07, 0x01, 0xf4, 0x00, 0x03, 0x0b } );
+    /****************************Packet info part********************************/
+
+    /*****************************Address part***********************************/
+    udp_data_set.insert(udp_data_set.end(), 6, 0x00); //local mac
+    memcpy( &udp_data_set[6], &local_mac[0], 6 );
+    udp_data_set.insert(udp_data_set.end(), 6, 0x00); //local ip
+    memcpy( &udp_data_set[12], str_ip_to_vec(local_ip), 4 );
+    /*****************************Address part***********************************/
+
+    udp_data_set.insert(udp_data_set.end(), { 0x02, 0x22, 0x00, 0x26 } );
+
+    /*****************************Protocol part**********************************/
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[20], &reserved_byte, 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[24], &udp_cksum, 4 );
+    /*****************************Protocol part**********************************/
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+
+    /****************************Basic info part*********************************/
+    udp_data_set.insert(udp_data_set.end(), 11, 0x00);
+    memcpy( &udp_data_set[32], &login_username, 11 );
+    udp_data_set.insert(udp_data_set.end(), 15, 0x00); //Fixed
+    memcpy(&udp_data_set[43], &hostname, hostname.length());
+    /****************************Basic info part*********************************/
+
+    udp_data_set.insert(udp_data_set.end(), 17, 0x00);
+
+
+    /*******************************DNS part*************************************/
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[75], str_ip_to_vec(local_dns_1), 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[83], str_ip_to_vec(local_dns_2), 4 );
+    /*******************************DNS part************************************/
+
+
+    /******************************Fixed data***********************************/
+    udp_data_set.insert(udp_data_set.end(), 8, 0x00);
+    udp_data_set.push_back(0x94);
+    udp_data_set.insert(udp_data_set.end(), 3, 0x00);
+    udp_data_set.push_back(0x06);
+    udp_data_set.insert(udp_data_set.end(), 3, 0x00);
+    udp_data_set.push_back(0x02);
+    udp_data_set.insert(udp_data_set.end(), 3, 0x00);
+    udp_data_set.insert(udp_data_set.end(), { 0xf0, 0x23, 0x00, 0x00, 0x02});
+    udp_data_set.insert(udp_data_set.end(), 3, 0x00);
+    udp_data_set.insert(pkt_data.end(), { 0x44, 0x74, 0x43, 0x4f, 0x4d } ); //String Dr.com
+    udp_data_set.insert(udp_data_set.end(), { 0x00, 0xb8, 0x01, 0x26 });
+    udp_data_set.insert(udp_data_set.end(), 55, 0x00);//Fixed
+    ///Fixed data copied from same version of official client, Version information of the module Maybe!!!///
+    udp_data_set.insert(udp_data_set.end(), { 0x39, 0x31, 0x39, 0x31, 0x36, 0x31, 0x63, 0x33, 0x64, 0x61,
+                                              0x62, 0x34, 0x33, 0x35, 0x32, 0x31, 0x35, 0x64, 0x63, 0x30,
+                                              0x31, 0x33, 0x30, 0x38, 0x35, 0x65, 0x39, 0x35, 0x32, 0x66,
+                                              0x64, 0x62, 0x63, 0x36, 0x66, 0x35, 0x62, 0x65, 0x36, 0x36 });
+    ///Fixed data copied from same version of official client, Version information of the module Maybe!!!///
+    udp_data_set.insert(udp_data_set.end(), 25, 0x00);
+    /******************************Fixed data***********************************/
+
+
+    ///////////////////////////////Data set begin/////////////////////////////////
+
+     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
+         printf("%02x ", *iter);
+     printf("\n");
 }
 
 void udp_dealer::sendalive_u40_1_pkt() {
@@ -86,22 +153,26 @@ void udp_dealer::sendalive_u40_1_pkt() {
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    ///// Data set /////
-    pkt_data.push_back(0x07); // Code fixed
-    pkt_data.push_back(udp_pkt_id); //packet id
-    pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
-    pkt_data.insert(pkt_data.end(), { 0x0b, 0x01 }); // Step,the rare set of data is self increment
-    pkt_data.insert(pkt_data.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
+    /****************************Data set*******************************/
+    std::vector<uint8_t> udp_data_set(data_length,0);
+    udp_data_set.push_back(0x07); // Code fixed
+    udp_data_set.push_back(udp_pkt_id); //packet id
+    udp_data_set.insert(udp_data_set.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
+    udp_data_set.insert(udp_data_set.end(), { 0x0b, 0x01 }); // Step,the rare set of data is self increment
+    udp_data_set.insert(udp_data_set.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
 
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); //Unknown but not fixed, changing data!!!(According to the reference of some related material online, it seems this set of data won't affect the process of authentication)
+    udp_data_set.insert(pkt_data.end(), { 0x00, 0x00 }); //Generate by the random function!
+    memcpy( &udp_data_set[8], &random_byte, 2 );
 
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
-    pkt_data.insert(pkt_data.end(), 4, 0x00);
-    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
-    pkt_data.insert(pkt_data.end(), 4, 0x00); // Fixed, default ip addr:0.0.0.0
-    pkt_data.insert(pkt_data.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
-    ///// Data set end /////
+    udp_data_set.insert(udp_data_set.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
+    udp_data_set.insert(udp_data_set.end(), { 0x00, 0x00 }); // Fixed Unknown
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+
+    udp_data_set.insert(udp_data_set.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00); // Fixed, default ip addr:0.0.0.0
+    udp_data_set.insert(udp_data_set.end(), 8, 0x00); // Fixed Unknown, 0x00 *8
+    /****************************Data set*******************************/
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -112,9 +183,10 @@ void udp_dealer::sendalive_u40_1_pkt() {
     printf("\n");
 }
 
-void udp_dealer::sendalive_u40_2_pkt() {
+void udp_dealer::sendalive_u40_2_pkt(string local_ip) {
     uint16_t data_length = 40;
     std::vector<uint8_t> pkt_data(DRCOM_U40_FRAME_SIZE - data_length, 0);
+
 
     struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
     memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
@@ -123,28 +195,33 @@ void udp_dealer::sendalive_u40_2_pkt() {
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
     memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
 
-    ///// Data set /////
-    pkt_data.push_back(0x07); // Code fixed
-    pkt_data.push_back(udp_pkt_id); //packet id
-    pkt_data.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
-    pkt_data.insert(pkt_data.end(), { 0x0B, 0x03 }); // Step,the rare set of data is self increment
-    pkt_data.insert(pkt_data.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
+    /****************************Data set*******************************/
+    std::vector<uint8_t> udp_data_set(data_length,0);
+    udp_data_set.push_back(0x07); // Code fixed
+    udp_data_set.push_back(udp_pkt_id); //packet id
+    udp_data_set.insert(pkt_data.end(), { 0x28, 0x00 }); // Packet Size 40 byte data per frame
+    udp_data_set.insert(pkt_data.end(), { 0x0b, 0x03 }); // Step,the rare set of data is self increment
+    udp_data_set.insert(pkt_data.end(), { 0xdc, 0x02 }); // Client Version(Uncertain) 5.2.1X fixed { 0xdc , 0x02 }
 
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); //Unknown but not fixed, changing data!!!(According to the reference of some related material online, it seems this set of data won't affect the process of authentication)
+    udp_data_set.insert(pkt_data.end(), { 0x00, 0x00 }); //Generate by the random function!
+    memcpy( &udp_data_set[16], &random_byte, 2 );
 
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00, 0x00, 0x00 }); // some time
-    pkt_data.insert(pkt_data.end(), { 0x00, 0x00 }); // Fixed Unknown
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    udp_data_set.insert(udp_data_set.end(), 2, 0x00);
 
-    pkt_data.insert(pkt_data.end(), 4, 0x00);
-    memcpy( &pkt_data[], &reserved_byte, 4 );  //need to certain the position to copy the data
+    udp_data_set.insert(pkt_data.end(), 4, 0x00);
+    memcpy( &udp_data_set[16], &reserved_byte, 4 );  //need to certain the position to copy the data
 
-    pkt_data.insert(pkt_data.end(), 4, 0x00);
-    memcpy( &pkt_data[], &in_cksum, 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
 
-    pkt_data.insert( pkt_data.end(), source_ip, 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[20], &udp_cksum, 4 );
 
-    pkt_data.insert(pkt_data.end(), 8, 0x00);
-    ///// Data set end /////
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy( &udp_data_set[24], str_ip_to_vec(local_ip), 4 );
+
+    udp_data_set.insert(pkt_data.end(), 8, 0x00);
+    /****************************Data set*******************************/
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -156,6 +233,21 @@ void udp_dealer::sendalive_u40_2_pkt() {
 }
 
 void udp_dealer::sendalive_u38_pkt() {
+
+    uint16_t data_length = 38;
+    std::vector<uint8_t> pkt_data(DRCOM_U40_FRAME_SIZE - data_length, 0);
+
+
+    struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
+    memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+    struct iphdr ip_header = get_ip_header(source_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + data_length);
+    memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(iphdr));
+    struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
+    memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
+
+    ///// Data set /////
+    std::vector<uint8_t> udp_data_set(data_length,0);
+
 }
 
 struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uint16_t total_length) {

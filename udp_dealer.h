@@ -28,9 +28,9 @@ public:
 	uint16_t in_cksum(uint16_t * addr, int len);
 
 	void send_u8_pkt();
-	void send_u244_pkt();
+	void send_u244_pkt(std::vector<uint8_t> local_mac, std::vector<uint8_t> login_username, string local_ip, string local_dns_1, string local_dns_2);
 	void sendalive_u40_1_pkt();
-	void sendalive_u40_2_pkt();
+	void sendalive_u40_2_pkt(string local_ip);
 	void sendalive_u38_pkt();
 
 	virtual ~udp_dealer();
@@ -41,6 +41,7 @@ private:
     string device;
     uint16_t port_to;
     uint16_t reserved_byte;
+	uint16_t random_byte;
 	uint8_t udp_pkt_id;
 
 	std::vector<uint8_t> local_mac;
