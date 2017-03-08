@@ -87,8 +87,7 @@ void udp_dealer::send_u244_pkt(std::vector<uint8_t> local_mac, std::vector<uint8
     /*****************************Protocol part**********************************/
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
     memcpy( &udp_data_set[20], &reserved_byte, 4 );
-    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    memcpy( &udp_data_set[24], &udp_cksum, 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00); //udp_244_chksum, generate by function named generate_244_chksum
     /*****************************Protocol part**********************************/
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
@@ -135,7 +134,8 @@ void udp_dealer::send_u244_pkt(std::vector<uint8_t> local_mac, std::vector<uint8
     /******************************Fixed data***********************************/
 
 
-    ///////////////////////////////Data set begin/////////////////////////////////
+    ///////////////////////////////Data set end/////////////////////////////////
+    generate_244_chksum(udp_data_set);
 
      for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
          printf("%02x ", *iter);
@@ -214,14 +214,15 @@ void udp_dealer::sendalive_u40_2_pkt(string local_ip) {
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
 
-    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    memcpy( &udp_data_set[20], &udp_cksum, 4 );
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00); //udp_40_chksum, generate by function named generate_40_chksum.
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
     memcpy( &udp_data_set[24], str_ip_to_vec(local_ip), 4 );
 
     udp_data_set.insert(pkt_data.end(), 8, 0x00);
     /****************************Data set*******************************/
+
+    generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
@@ -280,7 +281,7 @@ struct udphdr udp_dealer::get_udp_header(uint16_t port_from, uint16_t port_to, u
     return udp_header;
 }
 
-uint16_t udp_dealer::in_cksum(uint16_t * addr, int len) {  
+uint16_t udp_dealer::in_chksum(uint16_t * addr, int len) {
     int nleft = len;  
     uint32_t sum = 0;  
     uint16_t *w = addr;  
@@ -306,7 +307,42 @@ uint16_t udp_dealer::in_cksum(uint16_t * addr, int len) {
     sum += (sum >> 16);     /* add carry */  
     answer = ~sum;     /* truncate to 16 bits */  
     return (answer);  
-}  
+}
+
+void udp_dealer::generate_40_chksum(std::vector<uint8_t> data_buf) {
+
+    int16_t v7 = 0;
+    uint16_t v5 = 0;
+    uint32_t tmp;
+    for (int i = 0; i < 20; i++) {
+        memcpy(&v7, &data_buf[2*i], 2);
+        v5 ^= v7;
+    }
+    tmp = uint32_t(v5)*711;
+    memcpy(&data_buf[24], &tmp , 4);
+}
+
+void udp_dealer::generate_244_chksum(std::vector<uint8_t> data_buf) {
+    uint32_t drcom_protocol_param  = 20000711;
+    uint32_t tmp;
+    memcpy(&buf[24], &a, 4);
+    buf[28] = 126;
+
+    uint16_t len = buf[2];
+    uint16_t t = len >> 2;
+
+    uint32_t tmp = 0;
+    uint32_t v5 = 0;
+    for (int i = 0; i < t; i++) {
+        memcpy(&tmp, &buf[4*i], 4);
+        v5 ^= tmp;
+    }
+
+    buf[28] = 0;
+    tmp = v5*19680126;
+    memcpy(&data_buf[24], &tmp, 4);
+
+}
 
 udp_dealer::~udp_dealer() {
 }

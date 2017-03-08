@@ -4,8 +4,8 @@
 using namespace std;
 
 uint32_t func(uint8_t buf[]) {
-	uint32_t a = 20000711;
-	memcpy(&buf[24], &a, 4);
+	uint32_t drcom_protocol_param  = 20000711;
+	memcpy(&buf[24], &drcom_protocol_param, 4);
 	buf[28] = 126;
 
 	uint16_t len = buf[2];
