@@ -277,14 +277,38 @@ void udp_dealer::sendalive_u38_pkt() {
 
     ////////////////////////////// Data set begin ////////////////////////////////
     std::vector<uint8_t> udp_data_set;
+    udp_data_set.push_back(0xff); //fixed
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy(&udp_data_set[1], &u244_checksum[0], 4); //fill in u244 checksum
+
+    udp_data_set.insert(udp_data_set.end(), 12, 0x00);
+    memcpy(&udp_data_set[5], &md5_challenge_value[0], 12); //fill in the last 12 bit data of md5 challenge
+
+    udp_data_set.insert(udp_data_set.end(), 3, 0x00); //fixed
+    udp_data_set.insert(udp_data_set.end(), { 0x44, 0x72, 0x63, 0x6f }); //fixed string "Drco"
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    std::vector<uint8_t> vec_server_ip = str_ip_to_vec(dst_ip);
+    memcpy(&udp_data_set[24], &vec_server_ip[0], 4); // server ip
+
+    udp_data_set.insert(udp_data_set.end(), 2, 0x00);
+    memcpy(&udp_data_set[28], &u38_reserved_byte[0], 2);
 
 
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    memcpy(&udp_data_set[30], &vec_local_ip[0], 4); // local ip
+
+    udp_data_set.push_back(0x01); //fixed
+
+    udp_data_set.push_back(0x00);
+    memcpy(&udp_data_set[35], &u38_reserved_byte[2], 1);
 
 
-    // time_t current_time = time(0);
-    // memcpy(&udp_data_set[], &current_time, 2);
-
-
+     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
+     time_t current_time = time(0);
+     memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
 
     /////////////////////////////// Data set end /////////////////////////////////
     
@@ -397,6 +421,19 @@ void udp_dealer::u40_retrieved_last() {
 
 //save the bits after calculation to std::vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
 void udp_dealer::u38_retrieved_u244resp() {
+    uint8_t source_bit = u38_reserved_byte[1];
+    uint8_t tmp = source_bit << 1;
+    if (source_bit >= 128)
+        tmp |= 1;
+    memcpy(&u38_reserved_byte[1], &tmp, 1);
+
+
+    source_bit = u38_reserved_byte[2];
+    tmp = source_bit >> 1;
+    if (source_bit % 2 != 0)
+        tmp |= 128;
+    memcpy(&u38_reserved_byte[2], &tmp, 1);
+
 }
 
 udp_dealer::~udp_dealer() {

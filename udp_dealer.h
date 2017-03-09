@@ -59,7 +59,7 @@ private:
 	std::vector<uint8_t> u244_checksum;
 	std::vector<uint8_t> u244_retrieved_byte; // u8 response packet(8-11bit)
 	std::vector<uint8_t> u40_retrieved_byte;
-	std::vector<uint8_t> u38_reserved_byte; // calculated by the retrieved byte from u244 response packet(25-26 and 31 bit)
+	uint8_t u38_reserved_byte[3]; // calculated by the retrieved byte from u244 response packet(25-26 and 31 bit)
 };
 
 #endif
