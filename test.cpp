@@ -1,10 +1,11 @@
-#include <pcap.h>
+// #include <pcap.h>
+// // #include <net/ethernet.h>
+// #include <netinet/in.h>
 #include <string.h>
-#include <net/ethernet.h>
-#include <netinet/in.h>
 #include "def.h"
-#include "eap_dealer.h"
+#include "log.h"
 #include "get_device_addr.h"
+#include "eap_dealer.h"
 #include "udp_dealer.h"
 using namespace std;
 
@@ -45,7 +46,7 @@ int main(int argc, char *argv[]) {
 //            }
 //        }
 //    }
-    udp_dealer *deal = new udp_dealer(device, local_mac, local_ip, hangzhou_mac, authserver_ip, udp_alive_port);
+    // udp_dealer *deal = new udp_dealer(device, local_mac, local_ip, hangzhou_mac, authserver_ip, udp_alive_port);
     // deal->send_u244_pkt();
 
     printf("\n");
