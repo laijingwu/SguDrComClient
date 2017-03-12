@@ -53,10 +53,12 @@ private:
 	std::vector<uint8_t> gateway_mac;
 	std::string local_ip;
 	std::string dst_ip;
-	std::vector<uint8_t> md5_challenge_value;
+	std::string recv_error;
 
 	uint16_t random_byte;
+	std::vector<uint8_t> md5_challenge_value;
 	std::vector<uint8_t> u244_checksum;
+	std::vector<uint8_t> next_udp_packet;
 	std::vector<uint8_t> u244_retrieved_byte; // u8 response packet(8-11bit)
 	std::vector<uint8_t> u40_retrieved_byte;
 	uint8_t u38_reserved_byte[3]; // calculated by the retrieved byte from u244 response packet(25-26 and 31 bit)

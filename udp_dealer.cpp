@@ -51,6 +51,7 @@ void udp_dealer::send_u8_pkt() {
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U8_LOG_INFO("Sent UDP packet [size = 8].");
+    u244_retrieved_u8();
     
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -154,6 +155,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U244_LOG_INFO("Sent UDP packet [size = 244].");
+    u38_retrieved_u244resp();
 
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -201,6 +203,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40].");
+    u40_retrieved_last();
 
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -413,20 +416,47 @@ void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
 
 //retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
 void udp_dealer::u244_retrieved_u8() {
+    pcap.recv(&next_udp_packet, &recv_error);
+    if (next_udp_packet.size() == 32)
+        memcpy(&next_udp_packet[8], &u244_retrieved_byte[0], 4);
+    else
+    {
+        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
+        U244_LOG_ERR(&recv_error);
+    }
 }
 
 //retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
 void udp_dealer::u40_retrieved_last() {
+    pcap.recv(&next_udp_packet, &recv_error);
+    if (next_udp_packet.size() == 40 && next_udp_packet[5] == 0x02)
+        memcpy(&next_udp_packet[16], &u40_retrieved_byte[0], 4);
+    else
+    {
+        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
+        U40_2_LOG_ERR(&recv_error);
+    }
 }
 
 //save the bits after calculation to std::vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
 void udp_dealer::u38_retrieved_u244resp() {
+    pcap.recv(&next_udp_packet,&recv_error);
+    if(next_udp_packet.size() == 48)
+    {
+        memcpy(&next_udp_packet[25], &u38_reserved_byte[0], 1);
+        memcpy(&next_udp_packet[31], &u38_reserved_byte[1], 1);
+    }
+    else
+    {
+        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
+        U244_LOG_ERR(&recv_error);
+    }
+
     uint8_t source_bit = u38_reserved_byte[1];
     uint8_t tmp = source_bit << 1;
     if (source_bit >= 128)
         tmp |= 1;
     memcpy(&u38_reserved_byte[1], &tmp, 1);
-
 
     source_bit = u38_reserved_byte[2];
     tmp = source_bit >> 1;
