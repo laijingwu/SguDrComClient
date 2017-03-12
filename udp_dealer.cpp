@@ -23,13 +23,13 @@ udp_dealer::udp_dealer(
 }
 
 struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac) {
-	struct ether_header eth_header;
+    struct ether_header eth_header;
 
-	memcpy(eth_header.ether_dhost, &gateway_mac[0], 6);
-	memcpy(eth_header.ether_shost, &local_mac[0], 6);
-	eth_header.ether_type = htons(ETHERTYPE_IP); // IP 0x0800
+    memcpy(eth_header.ether_dhost, &gateway_mac[0], 6);
+    memcpy(eth_header.ether_shost, &local_mac[0], 6);
+    eth_header.ether_type = htons(ETHERTYPE_IP); // IP 0x0800
 
-	return eth_header;
+    return eth_header;
 }
 
 void udp_dealer::send_u8_pkt() {
@@ -328,10 +328,10 @@ void udp_dealer::sendalive_u38_pkt() {
 }
 
 struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uint16_t total_length) {
-	struct iphdr ip_header;
+    struct iphdr ip_header;
 
     ip_header.version = IPVERSION;
-	ip_header.ihl = sizeof(iphdr) / 4;
+    ip_header.ihl = sizeof(iphdr) / 4;
     ip_header.tos = 0;
     ip_header.tot_len = htons(total_length);
     ip_header.id = htons(ip_pkt_id);
@@ -346,7 +346,7 @@ struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uin
 }
 
 struct udphdr udp_dealer::get_udp_header(uint16_t port_from, uint16_t port_to, uint16_t udp_total_length) {
-	struct udphdr udp_header;
+    struct udphdr udp_header;
 
     udp_header.source = htons(port_from);
     udp_header.dest = htons(port_to);
@@ -418,10 +418,9 @@ void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
 void udp_dealer::u244_retrieved_u8() {
     pcap.recv(&next_udp_packet, &recv_error);
     if (next_udp_packet.size() == 32)
-        memcpy(&next_udp_packet[8], &u244_retrieved_byte[0], 4);
+        memcpy(&u244_retrieved_byte[0], &next_udp_packet[8], 4);
     else
     {
-        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
         U244_LOG_ERR(&recv_error);
     }
 }
@@ -430,40 +429,37 @@ void udp_dealer::u244_retrieved_u8() {
 void udp_dealer::u40_retrieved_last() {
     pcap.recv(&next_udp_packet, &recv_error);
     if (next_udp_packet.size() == 40 && next_udp_packet[5] == 0x02)
-        memcpy(&next_udp_packet[16], &u40_retrieved_byte[0], 4);
+        memcpy(&u40_retrieved_byte[0], &next_udp_packet[16], 4);
     else
     {
-        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
         U40_2_LOG_ERR(&recv_error);
     }
 }
 
 //save the bits after calculation to std::vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
 void udp_dealer::u38_retrieved_u244resp() {
-    pcap.recv(&next_udp_packet,&recv_error);
-    if(next_udp_packet.size() == 48)
+    next_udp_packet.clear();
+    if(next_udp_packet.size() == 48) // TODO: is packet length instand of data length
     {
-        memcpy(&next_udp_packet[25], &u38_reserved_byte[0], 1);
-        memcpy(&next_udp_packet[31], &u38_reserved_byte[1], 1);
+        memcpy(&u38_reserved_byte[0], &next_udp_packet[24], 2);
+        memcpy(&u38_reserved_byte[2], &next_udp_packet[31], 1);
+
+        uint8_t source_bit = u38_reserved_byte[1];
+        uint8_t tmp = source_bit << 1;
+        if (source_bit >= 128)
+            tmp |= 1;
+        memcpy(&u38_reserved_byte[1], &tmp, 1);
+
+        source_bit = u38_reserved_byte[2];
+        tmp = source_bit >> 1;
+        if (source_bit % 2 != 0)
+            tmp |= 128;
+        memcpy(&u38_reserved_byte[2], &tmp, 1);
     }
     else
     {
-        next_udp_packet.insert(next_udp_packet.end(), 4, 0x00);
         U244_LOG_ERR(&recv_error);
     }
-
-    uint8_t source_bit = u38_reserved_byte[1];
-    uint8_t tmp = source_bit << 1;
-    if (source_bit >= 128)
-        tmp |= 1;
-    memcpy(&u38_reserved_byte[1], &tmp, 1);
-
-    source_bit = u38_reserved_byte[2];
-    tmp = source_bit >> 1;
-    if (source_bit % 2 != 0)
-        tmp |= 128;
-    memcpy(&u38_reserved_byte[2], &tmp, 1);
-
 }
 
 udp_dealer::~udp_dealer() {

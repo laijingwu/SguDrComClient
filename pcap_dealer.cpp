@@ -91,8 +91,8 @@ void pcap_dealer::send_without_response(std::vector<uint8_t> data, std::string *
 }
 
 
-int pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
-    int ret = -1;
+bool pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
+    bool ret = -1;
     try
     {
         struct pcap_pkthdr *header;
@@ -114,8 +114,9 @@ int pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
     catch (sgudrcom_exception &e)
     {
         *error = e.get();
+        return false;
     }
-    return ret;
+    return true;
 }
 
 bool pcap_dealer::send_alive(std::vector<uint8_t> data, std::vector<uint8_t> *success, std::string *error) {

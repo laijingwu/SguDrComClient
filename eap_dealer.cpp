@@ -265,9 +265,40 @@ bool eap_dealer::response_md5_challenge(std::vector<uint8_t> gateway_mac) {
 	return ret;
 }
 
-bool eap_dealer::alive_identity(std::vector<uint8_t> gateway_mac) {
+void eap_dealer::alive_identity(std::vector<uint8_t> gateway_mac) {
 
-	resp_eap_id++;
+	EAP_LOG_INFO("Response, Identity." << std::endl);
+	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
+	std::vector<uint8_t> eap_resp_id = {
+		0x01,           // Version: 802.1X-2001
+		0x00,           // Type: EAP Packet
+		0x00, 0x00,     // EAP Length
+		0x02,           // Code: Reponse
+		(uint8_t) resp_eap_id,    // Id
+		0x00, 0x00,     // EAP Length
+		0x01            // Type: Identity
+	};   //-std=c++11
+
+	uint16_t eap_length = htons(5 + resp_id.size());
+	memcpy(&eap_resp_id[2], &eap_length, 2);
+	memcpy(&eap_resp_id[6], &eap_length, 2);
+
+	struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
+
+	memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+	memcpy(&pkt_data[sizeof(eth_header)], &eap_resp_id[0], eap_resp_id.size());
+	memcpy(&pkt_data[sizeof(eth_header) + eap_resp_id.size()], &resp_id[0], resp_id.size());
+	alive_data=pkt_data;
+	for(int j=0;j<96;j++){
+		response[j]=alive_data[j];
+	}
+
+	std::vector<uint8_t> success;
+	std::string error;
+
+	
+
+
 	std::vector<uint8_t> success;
 	std::string error;
 	bool ret = pcap.send_alive(alive_data, &success,&error);   //change here
@@ -280,7 +311,7 @@ bool eap_dealer::alive_identity(std::vector<uint8_t> gateway_mac) {
 		sprintf(ctime, "%d", (int)(time(0)-begintime));
 		SYS_LOG_INFO("Heartbeat Packet sent. Online time is " + std::string(ctime) + "s\n");
 	}
-	return ret;
+	resp_eap_id++;
 }
 
 void eap_dealer::logoff(std::vector<uint8_t> gateway_mac) {
