@@ -51,7 +51,7 @@ void udp_dealer::send_u8_pkt() {
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U8_LOG_INFO("Sent UDP packet [size = 8].");
-    u244_retrieved_u8();
+    u244_retrieved_u8(); //save the bits for generating u244 packets.
     
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -155,7 +155,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U244_LOG_INFO("Sent UDP packet [size = 244].");
-    u38_retrieved_u244resp();
+    u38_retrieved_u244resp(); //save the bits for generating the checksum bits in u38 packets.
 
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -203,7 +203,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40].");
-    u40_retrieved_last();
+    u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
