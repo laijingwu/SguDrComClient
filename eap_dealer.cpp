@@ -286,7 +286,7 @@ int eap_dealer::recv_gateway_returns() {
 
 	if (!pcap.recv(&success, &error))
 	{
-		return false;
+		return -1;
 	}
 
 	struct ether_header *eth_header; // 网络头
@@ -298,7 +298,7 @@ int eap_dealer::recv_gateway_returns() {
 	EAP_SHOW_PACKET_TYPE("Success");
 
 	if (eap_header->eapol_type != 0x00) // EAP Packet
-		return -1;
+		return -2;
 	// EAP Request
 	if (eap_header->eap_type == 0x01) // Request, Identity
 		return 0;

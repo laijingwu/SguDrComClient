@@ -40,13 +40,15 @@ void * thread_eap(void *ptr)
         switch(global_eap_dealer->recv_gateway_returns())
         {
             case -1: continue;
+            case -1: global_eap_dealer->alive_identity();
+                break;
             case 1: global_eap_dealer->alive_identity();
                 break;
             case 0: {
                 pthread_kill(thread_udp());
                 eap_login();
-            }
                 break;
+            }
         }
     }
 }
