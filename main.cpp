@@ -39,13 +39,13 @@ void * thread_eap(void *ptr)
     {
         switch(global_eap_dealer->recv_gateway_returns())
         {
-            case -1: continue;
-            case -1: global_eap_dealer->alive_identity();
+            case -2: continue;     //catch the wrong packet
+            case -1: global_eap_dealer->alive_identity(); //receive packet timeout, send alive packet again.ss
                 break;
-            case 1: global_eap_dealer->alive_identity();
+            case 1: global_eap_dealer->alive_identity(); //request identity and send alive
                 break;
             case 0: {
-                pthread_kill(thread_udp());
+                pthread_kill(thread_udp()); //receive the failure packet, try to reconnect
                 eap_login();
                 break;
             }
