@@ -6,8 +6,19 @@
 #include "utils.h"
 using namespace std;
 
-eap_dealer::eap_dealer(string device, vector<uint8_t> local_mac, std::string local_ip, std::string identity, std::string key)
-: pcap(device, local_mac), resp_eap_id(0), resp_md5_eap_id(0), local_mac(local_mac), key(str_to_vec(key))
+eap_dealer::eap_dealer(
+	string device,
+	vector<uint8_t> gateway_mac_init,
+	vector<uint8_t> local_mac,
+	std::string local_ip,
+	std::string identity,
+	std::string key)
+	: pcap(device, local_mac),
+	resp_eap_id(0),
+	resp_md5_eap_id(0),
+	gateway_mac(gateway_mac_init),
+	local_mac(local_mac),
+	key(str_to_vec(key))
 {
 
 	begintime = time(0);
@@ -35,17 +46,17 @@ eap_dealer::eap_dealer(string device, vector<uint8_t> local_mac, std::string loc
 
 }
 
-struct ether_header eap_dealer::get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac) {
+struct ether_header eap_dealer::get_eth_header(std::vector<uint8_t> gateway_mac_t, std::vector<uint8_t> local_mac) {
 	struct ether_header eth_header;
 
-	memcpy(eth_header.ether_dhost, &gateway_mac[0], 6);
+	memcpy(eth_header.ether_dhost, &gateway_mac_t[0], 6);
 	memcpy(eth_header.ether_shost, &local_mac[0], 6);
 	eth_header.ether_type = htons(0x888e); // 802.1X Authentication (0x888e)
 
 	return eth_header;
 }
 
-bool eap_dealer::start(std::vector<uint8_t> gateway_mac) {
+bool eap_dealer::start() {
     EAP_LOG_INFO("EAP Start." << std::endl);
     std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
     uint8_t eapol_start[] = {
@@ -94,12 +105,15 @@ bool eap_dealer::start(std::vector<uint8_t> gateway_mac) {
 			return false;
 		EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
 		resp_eap_id = eap_header->eap_id;
+		// get and save gateway mac address
+		gateway_mac.clear();
+		memcpy(&gateway_mac[0], &eth_header.ether_shost, 6);
 		return true;
 	}
 	return ret;
 }
 
-bool eap_dealer::response_identity(std::vector<uint8_t> gateway_mac) {
+bool eap_dealer::response_identity() {
 
 	EAP_LOG_INFO("Response, Identity." << std::endl);
 	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
@@ -167,7 +181,7 @@ bool eap_dealer::response_identity(std::vector<uint8_t> gateway_mac) {
 	return ret;
 }
 
-bool eap_dealer::response_md5_challenge(std::vector<uint8_t> gateway_mac) {
+bool eap_dealer::response_md5_challenge() {
 
 	EAP_LOG_INFO("Response, MD5-Challenge EAP." << std::endl);
 	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
@@ -265,16 +279,46 @@ bool eap_dealer::response_md5_challenge(std::vector<uint8_t> gateway_mac) {
 	return ret;
 }
 
-void eap_dealer::alive_identity(std::vector<uint8_t> gateway_mac) {
+void eap_dealer::recv_gateway_returns() {
+	EAP_LOG_INFO("Binding for gateway returns." << std::endl);
+	std::vector<uint8_t> success;
+	std::string error;
 
-	EAP_LOG_INFO("Response, Identity." << std::endl);
+	if (!pcap.recv(&success, &error))
+	{
+		return false;
+	}
+
+	struct ether_header *eth_header; // 网络头
+	struct eap_header *eap_header;
+
+	eth_header = (struct ether_header*) &success[0];
+	eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
+
+	EAP_SHOW_PACKET_TYPE("Success");
+
+	if (eap_header->eapol_type != 0x00) // EAP Packet
+		return false;
+	// EAP Request                  // EAP Failure
+	if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
+		return false;
+	// Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
+	if (eap_header->eap_type != 0x01) // Request, Identity
+		return false;
+	EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
+	resp_eap_id = eap_header->eap_id;
+}
+
+bool eap_dealer::alive_identity() {
+
+	// send heartbeat packet
 	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
 	std::vector<uint8_t> eap_resp_id = {
 		0x01,           // Version: 802.1X-2001
 		0x00,           // Type: EAP Packet
 		0x00, 0x00,     // EAP Length
 		0x02,           // Code: Reponse
-		(uint8_t) resp_eap_id,    // Id
+		(uint8_t) ++resp_eap_id,    // Id
 		0x00, 0x00,     // EAP Length
 		0x01            // Type: Identity
 	};   //-std=c++11
@@ -293,28 +337,19 @@ void eap_dealer::alive_identity(std::vector<uint8_t> gateway_mac) {
 		response[j]=alive_data[j];
 	}
 
-	std::vector<uint8_t> success;
-	std::string error;
-
-	
-
-
-	std::vector<uint8_t> success;
-	std::string error;
-	bool ret = pcap.send_alive(alive_data, &success,&error);   //change here
-
-	//just for debugging.
-	EAP_HANDLE_ERROR("Active, Identity. Could ignore this error!");
-
-	if(ret) {
-		char ctime[20];
-		sprintf(ctime, "%d", (int)(time(0)-begintime));
-		SYS_LOG_INFO("Heartbeat Packet sent. Online time is " + std::string(ctime) + "s\n");
-	}
+	error.clear();
+	pcap.send_without_response(alive_data, &error);
 	resp_eap_id++;
+
+	EAP_LOG_INFO("Active! Response, Identity." << std::endl);
+
+	char ctime[20];
+	sprintf(ctime, "%d", (int)(time(0)-begintime));
+	SYS_LOG_INFO("Heartbeat Packet sent. Online time: " + std::string(ctime) + "s\n");
+	return true;	
 }
 
-void eap_dealer::logoff(std::vector<uint8_t> gateway_mac) {
+void eap_dealer::logoff() {
 
 	EAP_LOG_INFO("Logoff." << std::endl);
 
@@ -331,8 +366,6 @@ void eap_dealer::logoff(std::vector<uint8_t> gateway_mac) {
 	memcpy(&pkt_data[sizeof(eth_header)], eapol_logoff, 4);
 
 	std::string error;
-
-	//pcap.send(pkt_data, handler_success, handler_error); //###############################
 	pcap.send_without_response(pkt_data, &error);
 }
 

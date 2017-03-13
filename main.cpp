@@ -15,14 +15,20 @@ eap_dealer *global_eap_dealer;
 
 bool eap_login()
 {
-	global_eap_dealer->logoff(broadcast_mac);
-	global_eap_dealer->logoff(broadcast_mac);
-	if (!global_eap_dealer->start(broadcast_mac)) {
+	global_eap_dealer->logoff();
+	global_eap_dealer->logoff();
+	sleep(2); // for completing log off.
+	if (!global_eap_dealer->start())
 		return false;
-	}
-	if (global_eap_dealer->response_identity()) {
+
+	if (!global_eap_dealer->response_identity())
 		return false;
-	}
+
+	if (!global_eap_dealer->response_md5_challenge())
+		return false;
+
+    // success
+	return true;
 }
 
 void * thread_eap(void *ptr)
@@ -52,7 +58,7 @@ int main(int argc, char *argv[])
 
     string local_ip = get_ip_address(device); //"192.168.197.64";
     vector<uint8_t> local_mac = get_mac_address(device); // { 0xd4, 0x3d, 0x7e, 0x54, 0x95, 0x36 };
-    vector<uint8_t> broadcast_mac = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+    vector<uint8_t> broadcast_mac(6, 0xff);
     vector<uint8_t> hangzhou_mac = { 0x58, 0x6a, 0xb1, 0x56, 0x78, 0x00 };
 
     // print system info
@@ -65,18 +71,24 @@ int main(int argc, char *argv[])
     cout << "****************************" << endl;
 
 
-	global_eap_dealer = new eap_dealer(device, local_mac, local_ip, username, password);
+	global_eap_dealer = new eap_dealer(device, broadcast_mac, local_mac, local_ip, username, password);
 	while (!eap_login()) {
 	}
 
 	// create eap thread
+    pthread_t id;
+    int ret = pthread_create(&id, NULL, thread_eap, NULL);
+	if (ret) {
+		cout << "Create pthread error!" << endl;
+		return 1;
+	}
 
- //    pthread_t id;
- //    int ret = pthread_create(&id, NULL, thread, NULL);
-	// if (ret) {
-	// 	cout << "Create pthread error!" << endl;
-	// 	return 1;
-	// }
+    // while (true)
+    // {
+    //     // control pannel
+    //     break;
+    // }
+    pthread_join(id, NULL);
 	
 	if (global_eap_dealer != NULL)
     	delete global_eap_dealer;

@@ -15,8 +15,7 @@ public:
 	bool init(std::string device, char filter[]);
 	bool send(std::vector<uint8_t> data, std::vector<uint8_t> *success, std::string *error);
 	void send_without_response(std::vector<uint8_t> data, std::string *error);
-	bool send_alive(std::vector<uint8_t> data, std::vector<uint8_t> *success, std::string *error);
-	int recv(std::vector<uint8_t> *success, std::string *error);
+	bool recv(std::vector<uint8_t> *success, std::string *error);
 	virtual ~pcap_dealer();
 
 private:

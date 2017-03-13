@@ -92,7 +92,7 @@ void pcap_dealer::send_without_response(std::vector<uint8_t> data, std::string *
 
 
 bool pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
-    bool ret = -1;
+    int ret = -1;
     try
     {
         struct pcap_pkthdr *header;
@@ -117,41 +117,6 @@ bool pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
         return false;
     }
     return true;
-}
-
-bool pcap_dealer::send_alive(std::vector<uint8_t> data, std::vector<uint8_t> *success, std::string *error) {
-	try
-    {
-        if (pcap_sendpacket(handle, &data[0], (int) data.size()) != 0){
-            throw sgudrcom_exception("pcap_sendpacket: " + std::string(pcap_geterr(handle)));
-        }
-        // struct pcap_pkthdr *header;
-        // const uint8_t *pkt_data;
-        // int ret = pcap_next_ex(handle, &header, &pkt_data);  //当有request 时才返回 1， 才发送成功。
-        // switch (ret) {
-        //     case 0: // Timeout
-        //         throw sgudrcom_exception("pcap_next_ex: timeout.");
-        //         break;
-        //     case 1: // Success
-        //         (*success).resize(header->len);
-        //         memcpy(&(*success)[0], pkt_data, header->len);
-        //         data[19]=pkt_data[19];
-        //         if (pcap_sendpacket(handle, &data[0], (int) data.size()) != 0){
-        //             throw sgudrcom_exception("pcap_sendpacket: " + std::string(pcap_geterr(handle)));
-        //             break;
-        //         }
-        //         break;
-        //     default:{
-        //         throw sgudrcom_exception(std::string("pcap_next_ex: ") + pcap_geterr(handle));
-        //     }
-        // }
-    }
-    catch (sgudrcom_exception &e)
-    {
-        *error = e.get();
-        return false;
-    }
-	return true;
 }
 
 pcap_dealer::~pcap_dealer() {

@@ -25,12 +25,14 @@ class eap_dealer
 public:
 	eap_dealer(string device, vector<uint8_t> local_mac, std::string local_ip, std::string identity, std::string key);
 
-	struct ether_header get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac);
-	bool start(std::vector<uint8_t> gateway_mac);
-	void logoff(std::vector<uint8_t> gateway_mac);
-	bool response_identity(std::vector<uint8_t> gateway_mac);
-	void alive_identity(std::vector<uint8_t> gateway_mac);
-	bool response_md5_challenge(std::vector<uint8_t> gateway_mac);
+	struct ether_header get_eth_header(std::vector<uint8_t> gateway_mac_t, std::vector<uint8_t> local_mac);
+	
+	bool start();
+	void logoff();
+	bool response_identity();
+	bool send_alive_identity();
+	bool response_md5_challenge();
+	void recv_gateway_returns();
 	std::vector<uint8_t> md5_value;
 
 	virtual ~eap_dealer();
@@ -42,6 +44,8 @@ private:
 	uint8_t response[128]; // 数据包
 	int begintime;
 
+	std::vector<uint8_t> gateway_mac;
+	// std::vector<uint8_t> broadcast_mac;
 	std::vector<uint8_t> local_mac; // Const
 	std::vector<uint8_t> resp_id, resp_md5_id, key;
 	std::vector<uint8_t> alive_data;
