@@ -12,6 +12,7 @@
 using namespace std;
 
 eap_dealer *global_eap_dealer;
+udp_dealer *global_udp_dealer;
 
 bool eap_login()
 {
@@ -33,10 +34,37 @@ bool eap_login()
 
 void * thread_eap(void *ptr)
 {
+
+    while(true)
+    {
+        switch(global_eap_dealer->recv_gateway_returns())
+        {
+            case -1: continue;
+            case 1: global_eap_dealer->alive_identity();
+                break;
+            case 0: {
+                pthread_kill(thread_udp());
+                eap_login();
+            }
+                break;
+        }
+    }
 }
 
 void * thread_udp(void *ptr)
 {
+    global_udp_dealer->send_u8_pkt();
+    global_udp_dealer->send_u244_pkt();
+    sleep(1);
+    while(true)
+    {
+        global_udp_dealer->sendalive_u40_1_pkt();
+        global_udp_dealer->sendalive_u40_2_pkt();
+        sleep(10);
+        global_udp_dealer->sendalive_u38_pkt();
+        sleep(5);
+    }
+
 }
 
 int main(int argc, char *argv[])

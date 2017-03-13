@@ -30,9 +30,10 @@ public:
 	bool start();
 	void logoff();
 	bool response_identity();
-	bool send_alive_identity();
+	bool alive_identity();
 	bool response_md5_challenge();
-	void recv_gateway_returns();
+	int recv_gateway_returns();
+
 	std::vector<uint8_t> md5_value;
 
 	virtual ~eap_dealer();

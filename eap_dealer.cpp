@@ -191,7 +191,7 @@ bool eap_dealer::response_md5_challenge() {
 		0x00,               // Type: EAP Packet
 		0x00, 0x00,         // EAP Length
 		0x02,               // Code: Reponse
-		(uint8_t) resp_md5_eap_id,    // Id
+		(uint8_t) resp_md5_eap_id,    // Idchallenge
 		0x00, 0x00,         // EAP Length
 		0x04,               // Type: MD5-Challenge EAP
 		EAP_MD5_VALUE_SIZE  // EAP-MD5 Value-Size = 16
@@ -279,7 +279,7 @@ bool eap_dealer::response_md5_challenge() {
 	return ret;
 }
 
-void eap_dealer::recv_gateway_returns() {
+int eap_dealer::recv_gateway_returns() {
 	EAP_LOG_INFO("Binding for gateway returns." << std::endl);
 	std::vector<uint8_t> success;
 	std::string error;
@@ -298,19 +298,20 @@ void eap_dealer::recv_gateway_returns() {
 	EAP_SHOW_PACKET_TYPE("Success");
 
 	if (eap_header->eapol_type != 0x00) // EAP Packet
-		return false;
-	// EAP Request                  // EAP Failure
-	if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
-		return false;
+		return -1;
+	// EAP Request
+	if (eap_header->eap_type == 0x01) // Request, Identity
+		return 0;
+	if (eap_header->eap_code == 0x04) // EAP Failure
+		return 1;
 	// Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
-	if (eap_header->eap_type != 0x01) // Request, Identity
-		return false;
+
 	EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
 	resp_eap_id = eap_header->eap_id;
 }
 
 bool eap_dealer::alive_identity() {
-
+	std::string error;
 	// send heartbeat packet
 	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
 	std::vector<uint8_t> eap_resp_id = {
