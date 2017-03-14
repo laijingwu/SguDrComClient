@@ -39,9 +39,8 @@ void * thread_eap(void *ptr)
     {
         switch(global_eap_dealer->recv_gateway_returns())
         {
-            case -2: continue;     //catch the wrong packet
-            case -1: global_eap_dealer->alive_identity(); //receive packet timeout, send alive packet again.ss
-                break;
+            case -2: continue; //catch the wrong packet, continue capturing packets.
+            case -1: continue; //receive packet timeout, continue capturing packets.
             case 1: global_eap_dealer->alive_identity(); //request identity and send alive
                 break;
             case 0: {
@@ -102,26 +101,32 @@ int main(int argc, char *argv[])
 
 
 	global_eap_dealer = new eap_dealer(device, broadcast_mac, local_mac, local_ip, username, password);
+    global_udp_dealer = new udp_dealer(device, local_mac, local_ip, hangzhou_mac, authserver_ip, udp_alive_port);
 	while (!eap_login()) {
 	}
 
 	// create eap thread
-    pthread_t id;
-    int ret = pthread_create(&id, NULL, thread_eap, NULL);
+    pthread_t t_eap_id, t_udp_id;
+    int ret;
+    ret = pthread_create(&t_eap_id, NULL, thread_eap, NULL);
 	if (ret) {
-		cout << "Create pthread error!" << endl;
+		cout << "Create eap thread error!" << endl;
 		return 1;
 	}
+    ret = pthread_create(&t_udp_id, NULL, thread_udp, NULL);
+    if(ret) {
+        cout << "Create udp thread error!" << endl;
+        return 1;
+    }
 
-    // while (true)
-    // {
-    //     // control pannel
-    //     break;
-    // }
-    pthread_join(id, NULL);
-	
-	if (global_eap_dealer != NULL)
-    	delete global_eap_dealer;
+    pthread_join(t_eap_id, NULL); //main thread blocked, waiting the eap thread exit
+    pthread_join(t_udp_id, NULL); //main thread blocked, waiting the udp thread exit
+
+    //Clean up task, delete all class object and release all resources
+    if (global_eap_dealer != NULL)
+        delete global_eap_dealer;
+    if (global_udp_dealer != NULL)
+        delete global_eap_dealer;
 
 	return 0;
 }
