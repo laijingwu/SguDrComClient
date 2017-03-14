@@ -7,10 +7,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
+#include <string.h>
 
 struct drcom_config
 {
-    
+    std::string device;
+    std::string username;
+    std::string password;
+    std::string authserver_ip;
+    uint16_t udp_alive_port;
 };
 
 

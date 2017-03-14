@@ -106,8 +106,8 @@ bool eap_dealer::start() {
 		EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
 		resp_eap_id = eap_header->eap_id;
 		// get and save gateway mac address
-		gateway_mac.clear();
-		memcpy(&gateway_mac[0], &eth_header.ether_shost, 6);
+		// gateway_mac.clear();
+		memcpy(&gateway_mac[0], &(eth_header->ether_shost), 6);
 		return true;
 	}
 	return ret;
@@ -117,6 +117,7 @@ bool eap_dealer::response_identity() {
 
 	EAP_LOG_INFO("Response, Identity." << std::endl);
 	std::vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
+
 	std::vector<uint8_t> eap_resp_id = {
 		0x01,           // Version: 802.1X-2001
 		0x00,           // Type: EAP Packet
@@ -267,7 +268,7 @@ bool eap_dealer::response_md5_challenge() {
 
 			if (!noti.compare("userid error3"))
 				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down." << std::endl);
-			logoff(gateway_mac); // Need to send a logoff, or the gateway will always send notification
+			logoff(); // Need to send a logoff, or the gateway will always send notification
 			return 1; // Don't retry when notification
 		}
 
@@ -299,15 +300,16 @@ int eap_dealer::recv_gateway_returns() {
 
 	if (eap_header->eapol_type != 0x00) // EAP Packet
 		return -2;
-	// EAP Request
-	if (eap_header->eap_type == 0x01) // Request, Identity
-		return 0;
 	if (eap_header->eap_code == 0x04) // EAP Failure
 		return 1;
+	// EAP Request
+	if (eap_header->eap_type == 0x01) {
+		EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
+		resp_eap_id = eap_header->eap_id;
+		return 0;
+	} // Request, Identity
 	// Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
-
-	EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
-	resp_eap_id = eap_header->eap_id;
+	return -2;
 }
 
 bool eap_dealer::alive_identity() {
@@ -338,7 +340,7 @@ bool eap_dealer::alive_identity() {
 		response[j]=alive_data[j];
 	}
 
-	error.clear();
+	// error.clear();
 	pcap.send_without_response(alive_data, &error);
 	resp_eap_id++;
 

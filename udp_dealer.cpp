@@ -20,6 +20,7 @@ udp_dealer::udp_dealer(
         dst_ip(dst_ip),
         udp_pkt_id(1u),
         u40_retrieved_byte(4, 0) {
+    // gateway_mac[4]++;
 }
 
 struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac) {
@@ -34,14 +35,14 @@ struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac,
 
 void udp_dealer::send_u8_pkt() {
     uint16_t data_length = 8;
-    std::vector<uint8_t> pkt_data(DRCOM_U8_FRAME_SIZE - data_length, 0);
+    std::vector<uint8_t> pkt_data(DRCOM_U8_FRAME_SIZE - data_length, 0);//
 
     struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
     memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
     struct iphdr ip_header = get_ip_header(local_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + data_length);
-    memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(iphdr));
+    memcpy(&pkt_data[sizeof(eth_header)], &ip_header, sizeof(ip_header));
     struct udphdr udp_header = get_udp_header(port_to, port_to, UDP_HEADER_SIZE + data_length);
-    memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
+    memcpy(&pkt_data[sizeof(eth_header) + sizeof(iphdr)], &udp_header, sizeof(udp_header));
 
     ////////////////////////////// Data set begin ////////////////////////////////
     pkt_data.insert(pkt_data.end(), { 0x07, 0x00, 0x08, 0x00, 0x01 } );
@@ -50,7 +51,7 @@ void udp_dealer::send_u8_pkt() {
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
-    U8_LOG_INFO("Sent UDP packet [size = 8].");
+    U8_LOG_INFO("Sent UDP packet [size = 8]." << std::endl);
     u244_retrieved_u8(); //save the bits for generating u244 packets.
     
     // debug
@@ -259,6 +260,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40].");
+    u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 
     // debug
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
@@ -417,8 +419,8 @@ void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
 //retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
 void udp_dealer::u244_retrieved_u8() {
     pcap.recv(&next_udp_packet, &recv_error);
-    if (next_udp_packet.size() == 32)
-        memcpy(&u244_retrieved_byte[0], &next_udp_packet[8], 4);
+    if (next_udp_packet.size() == 74)
+        memcpy(&u244_retrieved_byte[0], &next_udp_packet[50], 4);
     else
     {
         U244_LOG_ERR(&recv_error);
@@ -428,8 +430,8 @@ void udp_dealer::u244_retrieved_u8() {
 //retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
 void udp_dealer::u40_retrieved_last() {
     pcap.recv(&next_udp_packet, &recv_error);
-    if (next_udp_packet.size() == 40 && next_udp_packet[5] == 0x02)
-        memcpy(&u40_retrieved_byte[0], &next_udp_packet[16], 4);
+    if (next_udp_packet.size() == 82 && (next_udp_packet[47] == 0x02 || next_udp_packet[47] == 0x04))
+        memcpy(&u40_retrieved_byte[0], &next_udp_packet[58], 4);
     else
     {
         U40_2_LOG_ERR(&recv_error);
@@ -439,10 +441,10 @@ void udp_dealer::u40_retrieved_last() {
 //save the bits after calculation to std::vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
 void udp_dealer::u38_retrieved_u244resp() {
     next_udp_packet.clear();
-    if(next_udp_packet.size() == 48) // TODO: is packet length instand of data length
+    if(next_udp_packet.size() == 90) // TODO: is packet length instand of data length
     {
-        memcpy(&u38_reserved_byte[0], &next_udp_packet[24], 2);
-        memcpy(&u38_reserved_byte[2], &next_udp_packet[31], 1);
+        memcpy(&u38_reserved_byte[0], &next_udp_packet[66], 2);
+        memcpy(&u38_reserved_byte[2], &next_udp_packet[73], 1);
 
         uint8_t source_bit = u38_reserved_byte[1];
         uint8_t tmp = source_bit << 1;

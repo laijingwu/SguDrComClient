@@ -23,7 +23,7 @@ using namespace std;
 class eap_dealer
 {
 public:
-	eap_dealer(string device, vector<uint8_t> local_mac, std::string local_ip, std::string identity, std::string key);
+	eap_dealer(string device, vector<uint8_t> gateway_mac_init, vector<uint8_t> local_mac, std::string local_ip, std::string identity, std::string key);
 
 	struct ether_header get_eth_header(std::vector<uint8_t> gateway_mac_t, std::vector<uint8_t> local_mac);
 	

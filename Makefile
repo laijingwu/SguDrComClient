@@ -1,12 +1,12 @@
-OBJS=test.o pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o
+OBJS=main.o pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o
 EXE=main
 CC=g++ -std=c++11
 
 main: $(OBJS)
-	$(CC) -g -Wall -o $(EXE) $(OBJS) -lpcap
+	$(CC) -g -Wall -o $(EXE) $(OBJS) -lpcap -lpthread
 
-test.o: def.h pcap_dealer.h get_device_addr.h
-	$(CC) -c test.cpp
+main.o: def.h get_device_addr.h config.h log.h eap_dealer.h udp_dealer.h
+	$(CC) -c main.cpp
 
 pcap_dealer.o: pcap_dealer.h sgudrcom_exception.h def.h
 	$(CC) -c pcap_dealer.cpp
