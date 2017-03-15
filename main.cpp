@@ -69,10 +69,10 @@ void * thread_eap(void *ptr)
 void * thread_udp(void *ptr)
 {
     drcom_config *conf = (drcom_config *)ptr;
-    global_udp_dealer->send_u8_pkt();
     cout << "test 1" << endl;
-    global_udp_dealer->send_u244_pkt(conf->username, conf->password, "223.5.5.5", "114.114.114.114");
+    global_udp_dealer->send_u8_pkt();
     cout << "test 2" << endl;
+    global_udp_dealer->send_u244_pkt(conf->username, conf->password, "223.5.5.5", "114.114.114.114");
     sleep(1);
     while(drcom_status == ONLINE)
     {

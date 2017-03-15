@@ -32,10 +32,10 @@ struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac,
     return eth_header;
 }
 
-void udp_dealer::attach_header(std::vector<uint8_t> *pkt_data, std::vector<uint8_t> *udp_data_set) {
+void udp_dealer::attach_header(std::vector<uint8_t> &pkt_data, std::vector<uint8_t> &udp_data_set) {
     struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
-    memcpy(&pkt_data[0], &eth_header, sizeof(ether_header));
-    struct iphdr ip_header = get_ip_header(local_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + udp_data_set->size());
+    memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+    struct iphdr ip_header = get_ip_header(local_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + udp_data_set.size());
     memcpy(&pkt_data[sizeof(ether_header)], &ip_header, sizeof(iphdr));
     struct udphdr udp_header = get_udp_header(local_ip.c_str(), dst_ip.c_str(), port_to, port_to, udp_data_set);
     memcpy(&pkt_data[sizeof(ether_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
@@ -50,15 +50,16 @@ void udp_dealer::send_u8_pkt() {
     udp_data_set.insert(udp_data_set.end(), { 0x07, 0x00, 0x08, 0x00, 0x01 } );
     udp_data_set.insert(udp_data_set.end(), 3, 0x00);
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(&pkt_data, &udp_data_set); // put ether header, ip header, udp header into packet
+    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
     memcpy(&pkt_data[DRCOM_U8_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
     std::string error;
     pcap.send_without_response(pkt_data, &error);
     U8_LOG_INFO("Sent UDP packet [size = 8]." << std::endl);
-    u244_retrieved_u8(); //save the bits for generating u244 packets.
+    // u244_retrieved_u8(); //save the bits for generating u244 packets.
     
     // debug
+    printf("x=");
     for (std::vector<uint8_t>::iterator iter = pkt_data.begin(); iter != pkt_data.end(); iter++)
         printf("%02x ", *iter);
     printf("\n");
@@ -148,7 +149,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     generate_244_chksum(udp_data_set); // fill in the checksum bits of 244 bytes packet.
     memcpy(&u244_checksum[0], &udp_data_set[24], 4); // save the checksum for 38 bytes packet.
 
-    attach_header(&pkt_data, &udp_data_set); // put ether header, ip header, udp header into packet
+    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
     memcpy(&pkt_data[DRCOM_U244_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
     std::string error;
@@ -189,7 +190,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); // fixed, default ip addr:0.0.0.0
     udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(&pkt_data, &udp_data_set); // put ether header, ip header, udp header into packet
+    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
     memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
     std::string error;
@@ -239,7 +240,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    attach_header(&pkt_data, &udp_data_set); // put ether header, ip header, udp header into packet
+    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
     memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
     std::string error;
@@ -293,7 +294,7 @@ void udp_dealer::sendalive_u38_pkt() {
      memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
 
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(&pkt_data, &udp_data_set); // put ether header, ip header, udp header into packet
+    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
     memcpy(&pkt_data[DRCOM_U38_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
     std::string error;
@@ -324,27 +325,27 @@ struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uin
     return ip_header;
 }
 
-struct udphdr udp_dealer::get_udp_header(const char *source, const char *dest, uint16_t port_from, uint16_t port_to, std::vector<uint8_t> *udp_data_set) {
-    uint16_t udp_data_length = uint16_t(udp_data_set->size());
+struct udphdr udp_dealer::get_udp_header(const char *source, const char *dest, uint16_t port_from, uint16_t port_to, std::vector<uint8_t> &udp_data_set) {
+    uint16_t udp_data_length = uint16_t(udp_data_set.size());
     struct udphdr udp_header;
     struct psd_header psd;
 
     udp_header.source = htons(port_from);
     udp_header.dest = htons(port_to);
-    udp_header.len = htons(udp_data_length);
+    udp_header.len = htons(UDP_HEADER_SIZE + udp_data_length);
     udp_header.check = 0;
 
     psd.sourceip = inet_addr(source);
     psd.destip = inet_addr(dest);
     psd.mbz = 0;
     psd.ptcl = IPPROTO_UDP;
-    psd.plen = htons(udp_data_length);
+    psd.plen = htons(UDP_HEADER_SIZE + udp_data_length);
 
     // malloc
-    char *buf = new char(sizeof(psd_header) + UDP_HEADER_SIZE + udp_data_length);
+    char *buf = new char[sizeof(psd_header) + UDP_HEADER_SIZE + udp_data_length];
     memcpy(buf, &psd, sizeof(psd_header));
     memcpy(buf + sizeof(psd_header), &udp_header, sizeof(udphdr));
-    memcpy(buf + sizeof(psd_header) + sizeof(udphdr), udp_data_set, udp_data_length);
+    memcpy(buf + sizeof(psd_header) + sizeof(udphdr), &udp_data_set[0], udp_data_length);
     udp_header.check = in_cksum((uint16_t *)&udp_header, udp_data_length);
     delete[] buf;
 
