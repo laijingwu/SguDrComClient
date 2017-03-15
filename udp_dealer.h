@@ -25,8 +25,9 @@ public:
 
 	struct ether_header get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac);
 	struct iphdr get_ip_header(const char *source, const char *dest, uint16_t total_length);
-	struct udphdr get_udp_header(uint16_t port_from, uint16_t port_to, uint16_t udp_total_length);
+	struct udphdr get_udp_header(const char *source, const char *dest, uint16_t port_from, uint16_t port_to, std::vector<uint8_t> *udp_data_set);
 	uint16_t in_cksum(uint16_t * addr, int len);
+	void attach_header(std::vector<uint8_t> *pkt_data, std::vector<uint8_t> *udp_data_set);
 
 	void send_u8_pkt();
 	void send_u244_pkt(std::string login_username, std::string hostname, std::string local_dns_1, std::string local_dns_2);
