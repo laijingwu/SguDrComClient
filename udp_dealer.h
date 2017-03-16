@@ -8,6 +8,8 @@
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 #include <time.h>
 using namespace std;
 
@@ -17,6 +19,10 @@ using namespace std;
 #define DRCOM_U38_FRAME_SIZE    80
 #define IP_HEADER_SIZE    20
 #define UDP_HEADER_SIZE    8
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL SO_NOSIGPIPE
+#endif
 
 class udp_dealer
 {
@@ -41,9 +47,15 @@ public:
 	void u40_retrieved_last();
 	void u38_retrieved_u244resp();
 
+	bool socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, std::string local_ip, std::string gateway_ip, uint16_t gateway_port);
+
 	virtual ~udp_dealer();
 	
 private:
+	int udp_sock;
+	struct sockaddr_in gateway;
+	struct sockaddr_in local;
+
 	pcap_dealer pcap;
 	uint16_t ip_pkt_id;
     std::string device;

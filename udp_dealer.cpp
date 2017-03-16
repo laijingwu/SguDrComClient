@@ -2,6 +2,7 @@
 #include "log.h"
 #include "get_device_addr.h"
 #include "utils.h"
+#include "sgudrcom_exception.h"
 
 udp_dealer::udp_dealer(
         std::string device,
@@ -454,6 +455,51 @@ void udp_dealer::u38_retrieved_u244resp() {
     else
     {
         U244_LOG_ERR(&recv_error);
+    }
+}
+
+bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, std::string local_ip,
+                                   std::string gateway_ip, uint16_t gateway_port)
+{
+    try {
+        udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //initialize socket
+        if (udp_sock < 0) {
+            throw sgudrcom_exception::("socket", errno);
+            return false;
+        }
+        //fill in the local eth info
+        local.sin_family = AF_INET;
+        local.sin_port = 0; // system defined
+        local.sin_addr.s_addr = inet_addr(local_ip.c_str());
+        if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) {
+            //bind local port to listen
+            throw sgudrcom_exception::("bind", errno);
+        }
+        //fill in the gateway info
+        gateway.sin_family = AF_INET;
+        gateway.sin_port = htons(gateway_port);
+        gateway.sin_addr.s_addr = inet_addr(gateway_ip.c_str());
+        int total_length = 0;
+        int left_length = (int) pkt_data.size();
+        while (total_length < pkt_data.size()) {
+            int len = (int) sendto(udp_sock, &pkt_data[0], pkt_data.size(), MSG_NOSIGNAL, (struct sockaddr *) &gateway,
+                                   sizeof(gateway)); //send packet with socket.
+            if (len < 0) {
+                if (errno == EWOULDBLOCK && left_length > 0)
+                    continue;
+                else {
+                    throw sgudrcom_exception("sendto", errno);
+                }
+            }
+            total_length += len;
+            left_length -= len;
+        }
+        return true;
+    }
+    catch (sgudrcom_exception &e)
+    {
+        SYS_LOG_ERR(e.get());
+        return false;
     }
 }
 
