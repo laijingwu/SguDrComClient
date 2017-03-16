@@ -1,4 +1,4 @@
-OBJS=main.o pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o
+OBJS=main.o pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o socket_dealer.o
 EXE=main
 CC=g++ -std=c++11
 
@@ -28,6 +28,9 @@ udp_dealer.o: udp_dealer.h def.h pcap_dealer.h log.h
 
 config.o: config.h
 	$(CC) -c config.cpp
+
+socket_dealer.o: socket_dealer.h def.h
+	$(CC) -c socket_dealer.cpp
 
 .PHONY: clean
 clean:

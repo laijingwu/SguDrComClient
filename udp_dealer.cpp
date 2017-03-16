@@ -464,7 +464,7 @@ bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, st
     try {
         udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //initialize socket
         if (udp_sock < 0)
-            throw sgudrcom_exception::("socket", errno);
+            throw sgudrcom_exception("socket", errno);
 
         //fill in the local eth info
         local.sin_family = AF_INET;
@@ -472,7 +472,7 @@ bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, st
         local.sin_addr.s_addr = inet_addr(local_ip.c_str());
 
         if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) //bind local port to listen
-            throw sgudrcom_exception::("bind", errno);
+            throw sgudrcom_exception("bind", errno);
 
         //fill in the gateway info
         gateway.sin_family = AF_INET;

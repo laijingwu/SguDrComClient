@@ -9,7 +9,6 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-#include <fcntl.h>
 #include <time.h>
 using namespace std;
 
