@@ -463,22 +463,22 @@ bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, st
 {
     try {
         udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //initialize socket
-        if (udp_sock < 0) {
+        if (udp_sock < 0)
             throw sgudrcom_exception::("socket", errno);
-            return false;
-        }
+
         //fill in the local eth info
         local.sin_family = AF_INET;
         local.sin_port = 0; // system defined
         local.sin_addr.s_addr = inet_addr(local_ip.c_str());
-        if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) {
-            //bind local port to listen
+
+        if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) //bind local port to listen
             throw sgudrcom_exception::("bind", errno);
-        }
+
         //fill in the gateway info
         gateway.sin_family = AF_INET;
         gateway.sin_port = htons(gateway_port);
         gateway.sin_addr.s_addr = inet_addr(gateway_ip.c_str());
+
         int total_length = 0;
         int left_length = (int) pkt_data.size();
         while (total_length < pkt_data.size()) {
@@ -487,15 +487,15 @@ bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, st
             if (len < 0) {
                 if (errno == EWOULDBLOCK && left_length > 0)
                     continue;
-                else {
+                else
                     throw sgudrcom_exception("sendto", errno);
-                }
             }
             total_length += len;
             left_length -= len;
         }
         return true;
     }
+
     catch (sgudrcom_exception &e)
     {
         SYS_LOG_ERR(e.get());
