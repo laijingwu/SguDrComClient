@@ -71,6 +71,10 @@ static inline std::string log_now()
 #define U8_LOG_ERR(err)       LOG_ERR("U8", err)
 #define U8_LOG_DBG(db)        LOG_DBG("U8", db)
 
+#define SOCKET_LOG_INFO(info)    LOG_INFO("SOCKET", info)
+#define SOCKET_LOG_ERR(err)      LOG_ERR("SOCKET", err)
+#define SOCKET_LOG_DBG(db)       LOG_DBG("SOCKET", db)
+
 #define EAP_LOG_INFO(info)    LOG_INFO("EAP", info)
 #define EAP_LOG_ERR(err)      LOG_ERR("EAP", err)
 #define EAP_LOG_DBG(db)       LOG_DBG("EAP", db)

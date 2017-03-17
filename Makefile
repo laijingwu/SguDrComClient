@@ -29,7 +29,7 @@ udp_dealer.o: udp_dealer.h def.h pcap_dealer.h log.h
 config.o: config.h
 	$(CC) -c config.cpp
 
-socket_dealer.o: socket_dealer.h def.h
+socket_dealer.o: socket_dealer.h def.h log.h sgudrcom_exception.h
 	$(CC) -c socket_dealer.cpp
 
 .PHONY: clean

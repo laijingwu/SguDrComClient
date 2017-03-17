@@ -1,25 +1,30 @@
 #include "socket_dealer.h"
 #include "sgudrcom_exception.h"
+#include "log.h"
 
 socket_dealer::socket_dealer() {
 	init();
 }
 
 bool socket_dealer::init() {
-	try {
+	try
+	{
 		client_fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (client_fd < 0)
-			throw sgudrcom_exception("failed to create socket");
-		return true;
+			throw sgudrcom_exception("failed to create socket.");
 	}
-	catch(sgudrcom_exception &e){
+	catch(sgudrcom_exception &e)
+	{
+		SOCKET_LOG_ERR(e.get());
 		return false;
 	}
+	return true;
 }
 
 bool socket_dealer::send_udp_pkt(const char *dest, uint16_t port, std::vector<uint8_t> &udp_data_set) {
 	struct sockaddr_in server_addr;
-	try {
+	try
+	{
 		memset(&server_addr, 0, sizeof(server_addr));
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_addr.s_addr = inet_addr(dest);
@@ -33,34 +38,39 @@ bool socket_dealer::send_udp_pkt(const char *dest, uint16_t port, std::vector<ui
 
 		ssize_t ret = sendto(client_fd, buf, data_len, 0, (struct sockaddr *) &server_addr, len);
 		delete[] buf;
-		if (ret > 0)
-			return true;
+		if (ret < 0)
+			throw sgudrcom_exception("failed to send udp packet.");
 	}
-	catch(sgudrcom_exception &e){
-
+	catch(sgudrcom_exception &e)
+	{
+		SOCKET_LOG_ERR(e.get());
 		return false;
 	}
+	return true;
 }
 
 bool socket_dealer::recv_udp_pkt(std::vector<uint8_t> &pkt_data) {
 	struct sockaddr_in src_addr;
 	socklen_t len;
-	try {
+	try
+	{
 		char *buf = new char[RECV_BUFF_LEN];
 		memset(buf, 0, RECV_BUFF_LEN);
 
 		ssize_t ret = recvfrom(client_fd, buf, RECV_BUFF_LEN, 0, (struct sockaddr *) &src_addr, &len);
 		if (ret < 0)
-			throw sgudrcom_exception("failed to send packets");
+			throw sgudrcom_exception("failed to recv packets.");
 
 		pkt_data.insert(pkt_data.end(), RECV_BUFF_LEN, 0x00);
 		memcpy(&pkt_data[0], &buf, RECV_BUFF_LEN);
 		delete[] buf;
-		return true;
 	}
-	catch(sgudrcom_exception &e) {
+	catch(sgudrcom_exception &e)
+	{
+		SOCKET_LOG_ERR(e.get());
 		return false;
 	}
+	return true;
 }
 
 socket_dealer::~socket_dealer() {

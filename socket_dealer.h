@@ -2,7 +2,6 @@
 #define SOCKET_DEALER_H_
 
 #include "def.h"
-// #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
