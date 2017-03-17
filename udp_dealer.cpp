@@ -1,3 +1,8 @@
+/*
+removing all pcap function in this file and switch to socket
+todo:all code annotation new to delete or update
+*/
+
 #include "udp_dealer.h"
 #include "log.h"
 #include "get_device_addr.h"
@@ -11,7 +16,8 @@ udp_dealer::udp_dealer(
         std::vector<uint8_t> gateway_mac,
         std::string dst_ip,
         uint16_t port
-    ) : pcap(device, port),
+    ) : //pcap(device, port),  //remove pcap from udp_dealer
+        sock(),
         local_mac(local_mac),
         gateway_mac(gateway_mac),
         device(device),
@@ -23,24 +29,24 @@ udp_dealer::udp_dealer(
         u40_retrieved_byte(4, 0) {
 }
 
-struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac) {
-    struct ether_header eth_header;
+//struct ether_header udp_dealer::get_eth_header(std::vector<uint8_t> gateway_mac, std::vector<uint8_t> local_mac) {
+//    struct ether_header eth_header;
+//
+//    memcpy(eth_header.ether_dhost, &gateway_mac[0], 6);
+//    memcpy(eth_header.ether_shost, &local_mac[0], 6);
+//    eth_header.ether_type = htons(ETHERTYPE_IP); // IP 0x0800
+//
+//    return eth_header;
+//}
 
-    memcpy(eth_header.ether_dhost, &gateway_mac[0], 6);
-    memcpy(eth_header.ether_shost, &local_mac[0], 6);
-    eth_header.ether_type = htons(ETHERTYPE_IP); // IP 0x0800
-
-    return eth_header;
-}
-
-void udp_dealer::attach_header(std::vector<uint8_t> &pkt_data, std::vector<uint8_t> &udp_data_set) {
-    struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
-    memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
-    struct iphdr ip_header = get_ip_header(local_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + udp_data_set.size());
-    memcpy(&pkt_data[sizeof(ether_header)], &ip_header, sizeof(iphdr));
-    struct udphdr udp_header = get_udp_header(local_ip.c_str(), dst_ip.c_str(), port_to, port_to, udp_data_set);
-    memcpy(&pkt_data[sizeof(ether_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
-}
+//void udp_dealer::attach_header(std::vector<uint8_t> &pkt_data, std::vector<uint8_t> &udp_data_set) {
+//    struct ether_header eth_header = get_eth_header(gateway_mac, local_mac);
+//    memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
+//    struct iphdr ip_header = get_ip_header(local_ip.c_str(), dst_ip.c_str(), IP_HEADER_SIZE + UDP_HEADER_SIZE + udp_data_set.size());
+//    memcpy(&pkt_data[sizeof(ether_header)], &ip_header, sizeof(iphdr));
+//    struct udphdr udp_header = get_udp_header(local_ip.c_str(), dst_ip.c_str(), port_to, port_to, udp_data_set);
+//    memcpy(&pkt_data[sizeof(ether_header) + sizeof(iphdr)], &udp_header, sizeof(udphdr));
+//}
 
 void udp_dealer::send_u8_pkt() {
     uint16_t data_length = 8;
@@ -51,13 +57,15 @@ void udp_dealer::send_u8_pkt() {
     udp_data_set.insert(udp_data_set.end(), { 0x07, 0x00, 0x08, 0x00, 0x01 } );
     udp_data_set.insert(udp_data_set.end(), 3, 0x00);
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
-    memcpy(&pkt_data[DRCOM_U8_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
-    std::string error;
-    pcap.send_without_response(pkt_data, &error);
+//    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
+//    memcpy(&pkt_data[DRCOM_U8_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    std::string error;
+//    pcap.send_without_response(pkt_data, &error);
+    sock.send_udp_pkt( dst_ip.c_str(), port_to, udp_data_set);
+
     U8_LOG_INFO("Sent UDP packet [size = 8]." << std::endl);
-    // u244_retrieved_u8(); //save the bits for generating u244 packets.
+    u244_retrieved_u8(); //save the bits for generating u244 packets.
     
     // debug
     printf("x=");
@@ -150,11 +158,13 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     generate_244_chksum(udp_data_set); // fill in the checksum bits of 244 bytes packet.
     memcpy(&u244_checksum[0], &udp_data_set[24], 4); // save the checksum for 38 bytes packet.
 
-    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
-    memcpy(&pkt_data[DRCOM_U244_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
+//    memcpy(&pkt_data[DRCOM_U244_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    std::string error;
+//    pcap.send_without_response(pkt_data, &error);
 
-    std::string error;
-    pcap.send_without_response(pkt_data, &error);
+    sock.send_udp_pkt( dst_ip.c_str(), port_to, udp_data_set );
+
     U244_LOG_INFO("Sent UDP packet [size = 244].");
     u38_retrieved_u244resp(); //save the bits for generating the checksum bits in u38 packets.
 
@@ -191,12 +201,14 @@ void udp_dealer::sendalive_u40_1_pkt() {
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); // fixed, default ip addr:0.0.0.0
     udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
-    memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
-    std::string error;
-    pcap.send_without_response(pkt_data, &error);
+//    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
+//    memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    std::string error;
+//    pcap.send_without_response(pkt_data, &error);
+    sock.send_udp_pkt( dst_ip.c_str(), port_to, udp_data_set );
     U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40].");
+
     u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 
     // debug
@@ -241,11 +253,12 @@ void udp_dealer::sendalive_u40_2_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
-    memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
-    std::string error;
-    pcap.send_without_response(pkt_data, &error);
+//    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
+//    memcpy(&pkt_data[DRCOM_U40_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    std::string error;
+//    pcap.send_without_response(pkt_data, &error);
+    sock.send_udp_pkt( dst_ip.c_str(), port_to, udp_data_set );
     U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40].");
     u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 
@@ -295,11 +308,13 @@ void udp_dealer::sendalive_u38_pkt() {
      memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
 
     /////////////////////////////// Data set end /////////////////////////////////
-    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
-    memcpy(&pkt_data[DRCOM_U38_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
 
-    std::string error;
-    pcap.send_without_response(pkt_data, &error);
+//    attach_header(pkt_data, udp_data_set); // put ether header, ip header, udp header into packet
+//    memcpy(&pkt_data[DRCOM_U38_FRAME_SIZE - data_length], &udp_data_set[0], data_length); // put data into packet
+//    std::string error;
+//    pcap.send_without_response(pkt_data, &error);
+
+    sock.send_udp_pkt( dst_ip.c_str(), port_to, udp_data_set );
     U38_LOG_INFO("Sent UDP U38 alive packet [size = 38].");
 
     // debug
@@ -308,78 +323,6 @@ void udp_dealer::sendalive_u38_pkt() {
     printf("\n");
 }
 
-struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uint16_t total_length) {
-    struct iphdr ip_header;
-
-    ip_header.version = IPVERSION;
-    ip_header.ihl = sizeof(iphdr) / 4;
-    ip_header.tos = 0;
-    ip_header.tot_len = htons(total_length);
-    ip_header.id = htons(ip_pkt_id++);
-    ip_header.frag_off = htons(0);
-    ip_header.ttl = 0x40;
-    ip_header.protocol = IPPROTO_UDP;
-    ip_header.check = 0;
-    ip_header.saddr = inet_addr(source);
-    ip_header.daddr = inet_addr(dest);
-    ip_header.check  = in_cksum((uint16_t *)&ip_header, sizeof(iphdr));
-    return ip_header;
-}
-
-struct udphdr udp_dealer::get_udp_header(const char *source, const char *dest, uint16_t port_from, uint16_t port_to, std::vector<uint8_t> &udp_data_set) {
-    uint16_t udp_data_length = uint16_t(udp_data_set.size());
-    struct udphdr udp_header;
-    struct psd_header psd;
-
-    udp_header.source = htons(port_from);
-    udp_header.dest = htons(port_to);
-    udp_header.len = htons(UDP_HEADER_SIZE + udp_data_length);
-    udp_header.check = 0;
-
-    psd.sourceip = inet_addr(source);
-    psd.destip = inet_addr(dest);
-    psd.mbz = 0;
-    psd.ptcl = IPPROTO_UDP;
-    psd.plen = htons(UDP_HEADER_SIZE + udp_data_length);
-
-    // malloc
-    char *buf = new char[sizeof(psd_header) + UDP_HEADER_SIZE + udp_data_length];
-    memcpy(buf, &psd, sizeof(psd_header));
-    memcpy(buf + sizeof(psd_header), &udp_header, sizeof(udphdr));
-    memcpy(buf + sizeof(psd_header) + sizeof(udphdr), &udp_data_set[0], udp_data_length);
-    udp_header.check = in_cksum((uint16_t *)&udp_header, udp_data_length);
-    delete[] buf;
-
-    return udp_header;
-}
-
-uint16_t udp_dealer::in_cksum(uint16_t * addr, int len) {  
-    int nleft = len;  
-    uint32_t sum = 0;  
-    uint16_t *w = addr;  
-    uint16_t answer = 0;  
-  
-    /* 
-    * Our algorithm is simple, using a 32 bit accumulator (sum), we add 
-    * sequential 16 bit words to it, and at the end, fold back all the 
-    * carry bits from the top 16 bits into the lower 16 bits. 
-    */  
-    while (nleft > 1) {  
-        sum += *w++;  
-        nleft -= 2;  
-    }  
-    /* mop up an odd byte, if necessary */  
-    if (nleft == 1) {  
-        * (unsigned char *) (&answer) = * (unsigned char *) w;  
-        sum += answer;  
-    }  
-  
-    /* add back carry outs from top 16 bits to low 16 bits */  
-    sum = (sum >> 16) + (sum & 0xffff); /* add hi 16 to low 16 */  
-    sum += (sum >> 16);     /* add carry */  
-    answer = ~sum;     /* truncate to 16 bits */  
-    return (answer);  
-}
 
 void udp_dealer::generate_40_chksum(std::vector<uint8_t> &data_buf) {
     int16_t tmp = 0;
@@ -412,7 +355,8 @@ void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
 
 //retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
 void udp_dealer::u244_retrieved_u8() {
-    pcap.recv(&next_udp_packet, &recv_error);
+   // pcap.recv(&next_udp_packet, &recv_error);
+    sock.recv_udp_pkt(next_udp_packet);
     if (next_udp_packet.size() == 74)
         memcpy(&u244_retrieved_byte[0], &next_udp_packet[50], 4);
     else
@@ -423,7 +367,8 @@ void udp_dealer::u244_retrieved_u8() {
 
 //retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
 void udp_dealer::u40_retrieved_last() {
-    pcap.recv(&next_udp_packet, &recv_error);
+    //pcap.recv(&next_udp_packet, &recv_error);
+    sock.recv_udp_pkt(next_udp_packet);
     if (next_udp_packet.size() == 82 && (next_udp_packet[47] == 0x02 || next_udp_packet[47] == 0x04))
         memcpy(&u40_retrieved_byte[0], &next_udp_packet[58], 4);
     else
@@ -458,50 +403,124 @@ void udp_dealer::u38_retrieved_u244resp() {
     }
 }
 
-bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, std::string local_ip,
-                                   std::string gateway_ip, uint16_t gateway_port)
-{
-    try {
-        udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //initialize socket
-        if (udp_sock < 0)
-            throw sgudrcom_exception("socket", errno);
 
-        //fill in the local eth info
-        local.sin_family = AF_INET;
-        local.sin_port = 0; // system defined
-        local.sin_addr.s_addr = inet_addr(local_ip.c_str());
+//struct iphdr udp_dealer::get_ip_header(const char *source, const char *dest, uint16_t total_length) {
+//    struct iphdr ip_header;
+//
+//    ip_header.version = IPVERSION;
+//    ip_header.ihl = sizeof(iphdr) / 4;
+//    ip_header.tos = 0;
+//    ip_header.tot_len = htons(total_length);
+//    ip_header.id = htons(ip_pkt_id++);
+//    ip_header.frag_off = htons(0);
+//    ip_header.ttl = 0x40;
+//    ip_header.protocol = IPPROTO_UDP;
+//    ip_header.check = 0;
+//    ip_header.saddr = inet_addr(source);
+//    ip_header.daddr = inet_addr(dest);
+//    ip_header.check  = in_cksum((uint16_t *)&ip_header, sizeof(iphdr));
+//    return ip_header;
+//}
+//
+//struct udphdr udp_dealer::get_udp_header(const char *source, const char *dest, uint16_t port_from, uint16_t port_to, std::vector<uint8_t> &udp_data_set) {
+//    uint16_t udp_data_length = uint16_t(udp_data_set.size());
+//    struct udphdr udp_header;
+//    struct psd_header psd;
+//
+//    udp_header.source = htons(port_from);
+//    udp_header.dest = htons(port_to);
+//    udp_header.len = htons(UDP_HEADER_SIZE + udp_data_length);
+//    udp_header.check = 0;
+//
+//    psd.sourceip = inet_addr(source);
+//    psd.destip = inet_addr(dest);
+//    psd.mbz = 0;
+//    psd.ptcl = IPPROTO_UDP;
+//    psd.plen = htons(UDP_HEADER_SIZE + udp_data_length);
+//
+//    // malloc
+//    char *buf = new char[sizeof(psd_header) + UDP_HEADER_SIZE + udp_data_length];
+//    memcpy(buf, &psd, sizeof(psd_header));
+//    memcpy(buf + sizeof(psd_header), &udp_header, sizeof(udphdr));
+//    memcpy(buf + sizeof(psd_header) + sizeof(udphdr), &udp_data_set[0], udp_data_length);
+//    udp_header.check = in_cksum((uint16_t *)&udp_header, udp_data_length);
+//    delete[] buf;
+//
+//    return udp_header;
+//}
+//
+//uint16_t udp_dealer::in_cksum(uint16_t * addr, int len) {
+//    int nleft = len;
+//    uint32_t sum = 0;
+//    uint16_t *w = addr;
+//    uint16_t answer = 0;
+//
+//    /*
+//    * Our algorithm is simple, using a 32 bit accumulator (sum), we add
+//    * sequential 16 bit words to it, and at the end, fold back all the
+//    * carry bits from the top 16 bits into the lower 16 bits.
+//    */
+//    while (nleft > 1) {
+//        sum += *w++;
+//        nleft -= 2;
+//    }
+//    /* mop up an odd byte, if necessary */
+//    if (nleft == 1) {
+//        * (unsigned char *) (&answer) = * (unsigned char *) w;
+//        sum += answer;
+//    }
+//
+//    /* add back carry outs from top 16 bits to low 16 bits */
+//    sum = (sum >> 16) + (sum & 0xffff); /* add hi 16 to low 16 */
+//    sum += (sum >> 16);     /* add carry */
+//    answer = ~sum;     /* truncate to 16 bits */
+//    return (answer);
+//}
 
-        if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) //bind local port to listen
-            throw sgudrcom_exception("bind", errno);
-
-        //fill in the gateway info
-        gateway.sin_family = AF_INET;
-        gateway.sin_port = htons(gateway_port);
-        gateway.sin_addr.s_addr = inet_addr(gateway_ip.c_str());
-
-        int total_length = 0;
-        int left_length = (int) pkt_data.size();
-        while (total_length < pkt_data.size()) {
-            int len = (int) sendto(udp_sock, &pkt_data[0], pkt_data.size(), MSG_NOSIGNAL, (struct sockaddr *) &gateway,
-                                   sizeof(gateway)); //send packet with socket.
-            if (len < 0) {
-                if (errno == EWOULDBLOCK && left_length > 0)
-                    continue;
-                else
-                    throw sgudrcom_exception("sendto", errno);
-            }
-            total_length += len;
-            left_length -= len;
-        }
-        return true;
-    }
-
-    catch (sgudrcom_exception &e)
-    {
-        SYS_LOG_ERR(e.get());
-        return false;
-    }
-}
+//bool udp_dealer::socket_send_packet(int sock, std::vector<uint8_t> &pkt_data, std::string local_ip,
+//                                   std::string gateway_ip, uint16_t gateway_port)
+//{
+//    try {
+//        udp_sock = socket(AF_INET, SOCK_DGRAM, 0); //initialize socket
+//        if (udp_sock < 0)
+//            throw sgudrcom_exception("socket", errno);
+//
+//        //fill in the local eth info
+//        local.sin_family = AF_INET;
+//        local.sin_port = 0; // system defined
+//        local.sin_addr.s_addr = inet_addr(local_ip.c_str());
+//
+//        if (bind(udp_sock, (struct sockaddr *) &local, sizeof(local)) < 0) //bind local port to listen
+//            throw sgudrcom_exception("bind", errno);
+//
+//        //fill in the gateway info
+//        gateway.sin_family = AF_INET;
+//        gateway.sin_port = htons(gateway_port);
+//        gateway.sin_addr.s_addr = inet_addr(gateway_ip.c_str());
+//
+//        int total_length = 0;
+//        int left_length = (int) pkt_data.size();
+//        while (total_length < pkt_data.size()) {
+//            int len = (int) sendto(udp_sock, &pkt_data[0], pkt_data.size(), MSG_NOSIGNAL, (struct sockaddr *) &gateway,
+//                                   sizeof(gateway)); //send packet with socket.
+//            if (len < 0) {
+//                if (errno == EWOULDBLOCK && left_length > 0)
+//                    continue;
+//                else
+//                    throw sgudrcom_exception("sendto", errno);
+//            }
+//            total_length += len;
+//            left_length -= len;
+//        }
+//        return true;
+//    }
+//
+//    catch (sgudrcom_exception &e)
+//    {
+//        SYS_LOG_ERR(e.get());
+//        return false;
+//    }
+//}
 
 udp_dealer::~udp_dealer() {
 }
