@@ -9,7 +9,7 @@ udp_dealer::udp_dealer(
         std::string local_ip,
         std::string dst_ip,
         uint16_t port
-    ) : sock(port),
+    ) : sock(local_ip, port),
         local_mac(local_mac),
         port_to(port),
         local_ip(local_ip),
@@ -18,8 +18,9 @@ udp_dealer::udp_dealer(
         u40_retrieved_byte(4, 0),
         u244_retrieved_byte(4, 0),
         u244_checksum(4, 0) {
-        random_byte = xsrand();
-        memcpy(&u40_retrieved_byte[0], &random_byte, 4);
+        //srand(time(NULL));
+        //random_byte = xsrand();
+        //memcpy(&u40_retrieved_byte[0], &random_byte, 4);
 }
 
 void udp_dealer::send_u8_pkt() {
@@ -43,7 +44,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
 
     /*************************** Packet info part *******************************/
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id); // packet counter
+    udp_data_set.push_back(udp_pkt_id++); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x03); // fixed
@@ -127,7 +128,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     uint16_t data_length = 40;
 
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id); // packet counter
+    udp_data_set.push_back(udp_pkt_id++); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x0b); // fixed
@@ -159,7 +160,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
     ////////////////////////////// Data set begin ////////////////////////////////
     std::vector<uint8_t> udp_data_set;
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id); // packet counter
+    udp_data_set.push_back(udp_pkt_id++); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x0b); // fixed
@@ -203,7 +204,7 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
     memcpy(&udp_data_set[1], &u244_checksum[0], 4); //fill in u244 checksum
 
     udp_data_set.insert(udp_data_set.end(), 12, 0x00);
-    memcpy(&udp_data_set[5], &md5_challenge_value[0], 12); //fill in the last 12 bit data of md5 challenge
+    memcpy(&udp_data_set[5], &md5_challenge_value[16-12], 12); //fill in the last 12 bit data of md5 challenge
 
     udp_data_set.insert(udp_data_set.end(), 3, 0x00); //fixed
     udp_data_set.insert(udp_data_set.end(), { 0x44, 0x72, 0x63, 0x6f }); //fixed string "Drco"
@@ -226,9 +227,9 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
     memcpy(&udp_data_set[35], &u38_reserved_byte[2], 1);
 
 
-     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
-     time_t current_time = time(0);
-     memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
+    udp_data_set.insert(udp_data_set.end(), 2, 0x00);
+    time_t current_time = time(0);
+    memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
     /////////////////////////////// Data set end /////////////////////////////////
 
     sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
@@ -286,9 +287,11 @@ void udp_dealer::u40_retrieved_last() {
     {
         udp_packet_last.clear();
         sock.recv_udp_pkt(udp_packet_last);
-        if (udp_packet_last[0] != 0x07 && (udp_packet_last[5] != 0x02 || udp_packet_last[5] != 0x04)) continue;
-        udp_packet_last.resize(40);
-        break;
+        if (udp_packet_last[0] == 0x07 && udp_packet_last[2] == 0x28 && (udp_packet_last[5] == 0x02 || udp_packet_last[5] == 0x04)) {
+            udp_packet_last.resize(40);
+            break;
+        } else
+            continue;
     }
     memcpy(&u40_retrieved_byte[0], &udp_packet_last[16], 4);
 }

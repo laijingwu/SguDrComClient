@@ -2,6 +2,7 @@
 #include "get_device_addr.h"
 #include "md5.h"
 #include "log.h"
+#include <time.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
 
@@ -127,6 +128,6 @@ std::vector<uint8_t> str_to_vec(std::string str) {
 uint32_t xsrand() {
     srand(time(NULL));
     return (
-     (((uint32_t)rand()<<4)&0xFF00u)
-    | ((uint32_t)rand()&0x00FFu));
+     (((uint32_t)rand()<<4)&0xFFFF0000u)
+    | ((uint32_t)rand()&0x0000FFFFu));
 }

@@ -4,6 +4,12 @@
 
 **SguDrcomClient** 是由 **[laijingwu](https://laijingwu.com)** 和 **[Steven-Zhou](https://github.com/Zhou-Haowei)** 联合为韶关学院特别编写的**第三方 DrCom 客户端**，适用于韶关学院西区丁香苑等接入电信网络且使用DrCom 5.2.1(X)客户端的学生宿舍，它依赖于libpcap库，可编译后运行于 *Linux*。暂时只适配 *Linux*，后续将继续适配 *Windows, MacOS, OpenWrt*。
 
+### Todo List
+
+- [ ] 掉线后 socket 使用外网 IP 发送 udp
+- [ ] 偶尔出现 Start 后无返回包导致阻塞进而无法上线
+- [ ] 针对其他平台进行适配
+
 ### Special Thanks
 
 **SguDrcomClient** 的诞生离不开“巨人的肩膀”，特别是适配 DrCom 5.2.1 P版的，由 **Shindo** 编写的 **[EasyDrcom](https://github.com/coverxit/EasyDrcom)**。

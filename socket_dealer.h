@@ -12,8 +12,7 @@ using namespace std;
 class socket_dealer
 {
 public:
-	socket_dealer(uint16_t m_port);
-	bool init();
+	socket_dealer(std::string local_ip, uint16_t m_port);
 	bool send_udp_pkt(const char *dest, uint16_t port, std::vector<uint8_t> &udp_data_set);
 	bool recv_udp_pkt(std::vector<uint8_t> &pkt_data);
 

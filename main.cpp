@@ -83,9 +83,9 @@ void * thread_udp(void *ptr)
         global_udp_dealer->sendalive_u40_1_pkt();
         usleep(50000); // 50ms
         global_udp_dealer->sendalive_u40_2_pkt();
-        sleep(10);
+        sleep(6);
         global_udp_dealer->sendalive_u38_pkt(global_eap_dealer->md5_value);
-        sleep(5);
+        sleep(3);
     }
 }
 
