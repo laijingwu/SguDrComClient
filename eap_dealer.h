@@ -46,7 +46,6 @@ private:
 	int begintime;
 
 	std::vector<uint8_t> gateway_mac;
-	// std::vector<uint8_t> broadcast_mac;
 	std::vector<uint8_t> local_mac; // Const
 	std::vector<uint8_t> resp_id, resp_md5_id, key;
 	std::vector<uint8_t> alive_data;

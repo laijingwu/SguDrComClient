@@ -1,11 +1,10 @@
-// #include <pcap.h>
-// #include <net/ethernet.h>
-// #include <netinet/in.h>
 #include "def.h"
 #include <string.h>
 #include <pthread.h>
+#include <signal.h>
 #include "log.h"
 #include "config.h"
+#include "utils.h"
 #include "get_device_addr.h"
 #include "eap_dealer.h"
 #include "udp_dealer.h"
@@ -18,13 +17,14 @@ void * thread_udp(void *ptr);
 eap_dealer *global_eap_dealer;
 udp_dealer *global_udp_dealer;
 pthread_t t_udp_id, t_eap_id;
+pthread_mutex_t mutex_status;
 ONLINE_STATE drcom_status = OFFLINE;
 
 bool eap_login(drcom_config *conf)
 {
 	global_eap_dealer->logoff();
 	global_eap_dealer->logoff();
-	sleep(5); // for completing log off.
+	sleep(3); // for completing log off.
 	if (!global_eap_dealer->start())
 		return false;
 
@@ -35,7 +35,9 @@ bool eap_login(drcom_config *conf)
 		return false;
 
     // success
+    pthread_mutex_lock(&mutex_status);
     drcom_status = ONLINE;
+    pthread_mutex_unlock(&mutex_status);
     // create udp thread
     int ret = pthread_create(&t_udp_id, NULL, thread_udp, (void *)conf);
     if (ret) {
@@ -47,15 +49,19 @@ bool eap_login(drcom_config *conf)
 void * thread_eap(void *ptr)
 {
     drcom_config *conf = (drcom_config *)ptr;
-    while (drcom_status == ONLINE)
+    EAP_LOG_INFO("Binding for gateway returns." << std::endl);
+    while (pthread_mutex_lock(&mutex_status), drcom_status == ONLINE)
     {
+        pthread_mutex_unlock(&mutex_status);
         switch(global_eap_dealer->recv_gateway_returns())
         {
             case -2:           // catch the wrong packet, continue capturing packets.
-            case -1: continue; // receive packet timeout, continue capturing packets.
+            case -1: return NULL; // receive packet timeout, continue capturing packets.
             case 1: {
+                pthread_mutex_lock(&mutex_status);
                 drcom_status = OFFLINE; // receive the failure packet, try to reconnect
-                while (!eap_login(conf)) {
+                pthread_mutex_unlock(&mutex_status);
+                while (!eap_login(conf)) { // relogin
                 }
                 break;
             }
@@ -63,31 +69,29 @@ void * thread_eap(void *ptr)
                 break;
         }
     }
-    pthread_exit(NULL);
 }
 
 void * thread_udp(void *ptr)
 {
     drcom_config *conf = (drcom_config *)ptr;
-    cout << "test 1" << endl;
     global_udp_dealer->send_u8_pkt();
-    cout << "test 2" << endl;
-    global_udp_dealer->send_u244_pkt(conf->username, conf->password, "223.5.5.5", "114.114.114.114");
+    global_udp_dealer->send_u244_pkt(conf->username, "DrCom.Fucker", "223.5.5.5", "114.114.114.114");
     sleep(1);
-    while(drcom_status == ONLINE)
+    while(pthread_mutex_lock(&mutex_status), drcom_status == ONLINE)
     {
+        pthread_mutex_unlock(&mutex_status);
         global_udp_dealer->sendalive_u40_1_pkt();
+        usleep(50000); // 50ms
         global_udp_dealer->sendalive_u40_2_pkt();
         sleep(10);
-        global_udp_dealer->sendalive_u38_pkt();
+        global_udp_dealer->sendalive_u38_pkt(global_eap_dealer->md5_value);
         sleep(5);
     }
-    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc < 1) {
+	if (argc < 2) {
 		cerr << "require a config file path." << endl;
 		return 1;
 	}
@@ -103,22 +107,24 @@ int main(int argc, char *argv[])
     conf.udp_alive_port = configSettings.Read("udp_alive_port", conf.udp_alive_port);
 
 
-    string local_ip = get_ip_address(conf.device); //"192.168.197.64";
-    vector<uint8_t> local_mac = get_mac_address(conf.device); // { 0xd4, 0x3d, 0x7e, 0x54, 0x95, 0x36 };
+    string local_ip = get_ip_address(conf.device);
+    vector<uint8_t> local_mac = get_mac_address(conf.device);
     vector<uint8_t> broadcast_mac(6, 0xff);
-    vector<uint8_t> hangzhou_mac = { 0x58, 0x6a, 0xb1, 0x56, 0x79, 0x00 };
 
     // print system info
+    uint8_t local_mac_array[6];
+    memcpy(&local_mac_array[0], &local_mac[0], 6);
     cout << "******** Drcom Info ********" << endl;
     cout << "device: " << conf.device << endl;
     cout << "username: " << conf.username << endl;
     cout << "password: " << conf.password << endl;
     cout << "local ip: " << local_ip << endl;
-    //cout << "local mac: " << local_mac[0] << endl;
+    cout << "local mac: " << hex_to_str(local_mac_array, local_mac.size(), ':') << endl;
     cout << "****************************" << endl;
 
 	global_eap_dealer = new eap_dealer(conf.device, broadcast_mac, local_mac, local_ip, conf.username, conf.password);
-    global_udp_dealer = new udp_dealer(conf.device, local_mac, local_ip, hangzhou_mac, conf.authserver_ip, conf.udp_alive_port);
+    global_udp_dealer = new udp_dealer(local_mac, local_ip, conf.authserver_ip, conf.udp_alive_port);
+    pthread_mutex_init(&mutex_status, NULL);
 	while (!eap_login(&conf)) {
 	}
 
@@ -135,25 +141,26 @@ int main(int argc, char *argv[])
     {
         cin >> s;
         if (s == "quit") {
+            pthread_mutex_lock(&mutex_status);
             drcom_status = OFFLINE;
+            pthread_mutex_unlock(&mutex_status);
             pthread_join(t_udp_id, NULL); // main thread blocked, waiting the udp thread exit
-            SYS_LOG_INFO("UDP has closed.");
-            pthread_join(t_eap_id, NULL); // main thread blocked, waiting the eap thread exit
-            SYS_LOG_INFO("EAP has closed.");
+            SYS_LOG_INFO("UDP thread has closed. [Done]" << endl);
+            pthread_kill(t_eap_id, SIGQUIT);
+            SYS_LOG_INFO("EAP thread has closed. [Done]" << endl);
             global_eap_dealer->logoff();
-            global_eap_dealer->logoff();
-            SYS_LOG_INFO("Logoff sent.");
+            SYS_LOG_INFO("Logoff. [Done]" << endl);
             break;
         }
     }
 
     // Clean up task, delete all class object and release all resources
-    if (global_eap_dealer != NULL)
-        delete global_eap_dealer;
     if (global_udp_dealer != NULL)
         delete global_udp_dealer;
+    if (global_eap_dealer != NULL)
+        delete global_eap_dealer;
 
-    SYS_LOG_INFO("Clean has done.");
+    SYS_LOG_INFO("Clean up. [Done]" << endl);
 
 	return 0;
 }

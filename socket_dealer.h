@@ -12,7 +12,7 @@ using namespace std;
 class socket_dealer
 {
 public:
-	socket_dealer();
+	socket_dealer(uint16_t m_port);
 	bool init();
 	bool send_udp_pkt(const char *dest, uint16_t port, std::vector<uint8_t> &udp_data_set);
 	bool recv_udp_pkt(std::vector<uint8_t> &pkt_data);
@@ -21,6 +21,7 @@ public:
 
 private:
 	int client_fd;
+	uint16_t port;
 	
 };
 

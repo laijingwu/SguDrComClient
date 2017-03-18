@@ -2,7 +2,7 @@
 #include "sgudrcom_exception.h"
 #include "log.h"
 
-socket_dealer::socket_dealer() {
+socket_dealer::socket_dealer(uint16_t m_port) : port(m_port) {
 	init();
 }
 
@@ -28,7 +28,6 @@ bool socket_dealer::send_udp_pkt(const char *dest, uint16_t port, std::vector<ui
 		memset(&server_addr, 0, sizeof(server_addr));
 		server_addr.sin_family = AF_INET;
 		server_addr.sin_addr.s_addr = inet_addr(dest);
-		// server_addr.sin_addr.s_addr = htonl(INADDR_ANY);  //注意网络序转换
 		server_addr.sin_port = htons(port);
 
 		socklen_t len = sizeof(server_addr);
@@ -56,13 +55,14 @@ bool socket_dealer::recv_udp_pkt(std::vector<uint8_t> &pkt_data) {
 	{
 		char *buf = new char[RECV_BUFF_LEN];
 		memset(buf, 0, RECV_BUFF_LEN);
+		len = sizeof(src_addr);
 
 		ssize_t ret = recvfrom(client_fd, buf, RECV_BUFF_LEN, 0, (struct sockaddr *) &src_addr, &len);
 		if (ret < 0)
 			throw sgudrcom_exception("failed to recv packets.");
 
 		pkt_data.insert(pkt_data.end(), RECV_BUFF_LEN, 0x00);
-		memcpy(&pkt_data[0], &buf, RECV_BUFF_LEN);
+		memcpy(&pkt_data[0], &buf[0], RECV_BUFF_LEN);
 		delete[] buf;
 	}
 	catch(sgudrcom_exception &e)

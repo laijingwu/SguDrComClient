@@ -89,20 +89,29 @@ bool eap_dealer::start() {
 	if(ret) {
 		struct ether_header *eth_header; // 网络头
 		struct eap_header *eap_header;
+		while (true) {
+			eth_header = (struct ether_header*) &success[0];
+			eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
 
-		eth_header = (struct ether_header*) &success[0];
-		eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
+			// just for debug
+			// EAP_SHOW_PACKET_TYPE("Start");
 
-		EAP_SHOW_PACKET_TYPE("Start");
-
-		if (eap_header->eapol_type != 0x00) // EAP Packet
-			return false;
-		// EAP Request                  // EAP Failure
-		if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
-			return false;
-		// Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
-		if (eap_header->eap_type != 0x01) // Request, Identity
-			return false;
+			if (eap_header->eapol_type != 0x00) // EAP Packet
+				return false;
+			// EAP Request                  // EAP Failure
+			if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
+			{
+				EAP_LOG_INFO("Gateway returns: Failue. Try to recv start packet again." << std::endl);
+				success.clear();
+				pcap.recv(&success, &error);
+				continue;
+			}
+			// Now, only eap_code = 0x01 packets, select eap_type = 0x01 packet
+			if (eap_header->eap_type != 0x01) // Request, Identity
+				return false;
+			break;
+		}
+		
 		EAP_LOG_INFO("Gateway returns: Request, Identity" << std::endl);
 		resp_eap_id = eap_header->eap_id;
 		// get and save gateway mac address
@@ -167,7 +176,8 @@ bool eap_dealer::response_identity() {
 		//eth_header = (struct ether_header*) &success[0];
 		eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
 
-		EAP_SHOW_PACKET_TYPE("Response, Identity");
+		// just for debug
+		// EAP_SHOW_PACKET_TYPE("Response, Identity");
 
 		if (eap_header->eapol_type != 0x00) // EAP Packet
 			return false;
@@ -208,8 +218,6 @@ bool eap_dealer::response_md5_challenge() {
 	memcpy(&pkt_data[0], &eth_header, sizeof(eth_header));
 	memcpy(&pkt_data[sizeof(eth_header)], &eap_resp_md5_ch[0], eap_resp_md5_ch.size());
 
-	// EAP Id
-	// TODO:算法可能需要修正
 	std::vector<uint8_t> eap_key(1 + key.size() + EAP_MD5_VALUE_SIZE);
 	eap_key[0] = resp_md5_eap_id;
 	memcpy(&eap_key[1], &key[0], key.size());
@@ -245,7 +253,8 @@ bool eap_dealer::response_md5_challenge() {
 		//eth_header = (struct ether_header*) &success[0];
 		eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
 
-		EAP_SHOW_PACKET_TYPE("Response, MD5-Challenge EAP");
+		// just for debug
+		// EAP_SHOW_PACKET_TYPE("Response, MD5-Challenge EAP");
 
 		if (eap_header->eapol_type != 0x00) // EAP Packet
 			return false;
@@ -281,7 +290,7 @@ bool eap_dealer::response_md5_challenge() {
 }
 
 int eap_dealer::recv_gateway_returns() {
-	EAP_LOG_INFO("Binding for gateway returns." << std::endl);
+	
 	std::vector<uint8_t> success;
 	std::string error;
 
@@ -296,7 +305,8 @@ int eap_dealer::recv_gateway_returns() {
 	eth_header = (struct ether_header*) &success[0];
 	eap_header = (struct eap_header*) (&success[0] + sizeof(struct ether_header));
 
-	EAP_SHOW_PACKET_TYPE("Success");
+	// just for debug
+	// EAP_SHOW_PACKET_TYPE("Success");
 
 	if (eap_header->eapol_type != 0x00) // EAP Packet
 		return -2;

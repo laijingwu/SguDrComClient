@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <vector>
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 using namespace std;
 
 vector<uint8_t> get_md5_digest(std::vector<uint8_t>& data);
@@ -14,5 +16,6 @@ vector<std::string> split_string(string src, char delimiter = ' ', bool append_l
 vector<uint8_t> str_ip_to_vec(string ip);
 vector<uint8_t> str_mac_to_vec(string mac);
 vector<uint8_t> str_to_vec(string str);
+uint32_t xsrand();
 
 #endif

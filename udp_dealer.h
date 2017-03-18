@@ -3,29 +3,19 @@
 
 #include "def.h"
 #include "socket_dealer.h"
-// #include <net/ethernet.h>
-// #include <netinet/in.h>
-// #include <netinet/ip.h>
-// #include <netinet/udp.h>
-// #include <arpa/inet.h>
 #include <time.h>
 using namespace std;
-
-#define DRCOM_U8_FRAME_SIZE    50
-#define DRCOM_U244_FRAME_SIZE    286
-#define DRCOM_U40_FRAME_SIZE    82
-#define DRCOM_U38_FRAME_SIZE    80
 
 class udp_dealer
 {
 public:
-	udp_dealer(std::string device, std::vector<uint8_t> local_mac, std::string local_ip, std::vector<uint8_t> gateway_mac, std::string dst_ip, uint16_t port);
+	udp_dealer(std::vector<uint8_t> local_mac, std::string local_ip, std::string dst_ip, uint16_t port);
 
 	void send_u8_pkt();
 	void send_u244_pkt(std::string login_username, std::string hostname, std::string local_dns_1, std::string local_dns_2);
 	void sendalive_u40_1_pkt();
 	void sendalive_u40_2_pkt();
-	void sendalive_u38_pkt();
+	void sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value);
 
 	void generate_244_chksum(std::vector<uint8_t> &data_buf);
 	void generate_40_chksum(std::vector<uint8_t> &data_buf);
@@ -41,14 +31,11 @@ private:
 	uint8_t udp_pkt_id;
 
 	std::vector<uint8_t> local_mac;
-	std::vector<uint8_t> gateway_mac;
 	std::string local_ip;
 	std::string dst_ip;
 
-	uint16_t random_byte;
-	std::vector<uint8_t> md5_challenge_value;
+	uint32_t random_byte;
 	std::vector<uint8_t> u244_checksum;
-	std::vector<uint8_t> next_udp_packet;
 	std::vector<uint8_t> u244_retrieved_byte; // u8 response packet(8-11bit)
 	std::vector<uint8_t> u40_retrieved_byte;
 	uint8_t u38_reserved_byte[3]; // calculated by the retrieved byte from u244 response packet(25-26 and 31 bit)
