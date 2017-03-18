@@ -2,10 +2,13 @@
 
 ### What's SguDrcomClient?
 
-**SguDrcomClient** 是由 **[laijingwu](https://laijingwu.com)** 和 **[Steven-Zhou](https://github.com/Zhou-Haowei)** 联合为韶关学院特别编写的**第三方 DrCom 客户端**，适用于韶关学院西区丁香苑等接入电信网络且使用DrCom 5.2.1(X)客户端的学生宿舍，它依赖于libpcap库，可编译后运行于 *Linux*。暂时只适配 *Linux*，后续将继续适配 *Windows, MacOS, OpenWrt*。
+**SguDrcomClient** 是由 **[laijingwu](https://laijingwu.com)** 和 **[Steven-Zhou](https://github.com/Zhou-Haowei)** 联合为韶关学院特别编写的**第三方 DrCom 客户端**，适用于韶关学院西区丁香苑等接入电信网络且使用DrCom 5.2.1(X)客户端的学生宿舍，它依赖于libpcap, pthread库，可编译后运行于 *Linux*。暂时只适配 *Linux*，后续将继续适配 *Windows, MacOS, OpenWrt*。
 
 ### Todo List
 
+- [ ] 30分钟掉线且无法上线
+- [ ] 在其他机器上测试 UDP40_2 无法发送
+- [ ] 返回长度为 272 的 UDP40 包未发送
 - [ ] 掉线后 socket 使用外网 IP 发送 udp
 - [ ] 偶尔出现 Start 后无返回包导致阻塞进而无法上线
 - [ ] 针对其他平台进行适配
