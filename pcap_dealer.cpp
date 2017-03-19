@@ -41,7 +41,7 @@ bool pcap_dealer::init(std::string device, char filter[]) {
         return false;
     }
 
-    pcap_set_timeout(handle, 4000); // timeout 5s
+    pcap_set_timeout(handle, 4000); // timeout 4s
 
     pcap_freecode(&fp);
     return true;

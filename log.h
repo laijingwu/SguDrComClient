@@ -51,6 +51,10 @@ static inline std::string log_now()
     #define LOG_DBG(section, db)
 #endif
 
+#define U40_3_LOG_INFO(info)  LOG_INFO("U40_3", info)
+#define U40_3_LOG_ERR(err)    LOG_ERR("U40_3", err)
+#define U40_3_LOG_DBG(db)     LOG_DBG("U40_3", db)
+
 #define U38_LOG_INFO(info)    LOG_INFO("U38", info)
 #define U38_LOG_ERR(err)      LOG_ERR("U38", err)
 #define U38_LOG_DBG(db)       LOG_DBG("U38", db)

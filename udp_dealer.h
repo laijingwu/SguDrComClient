@@ -16,6 +16,8 @@ public:
 	void sendalive_u40_1_pkt();
 	void sendalive_u40_2_pkt();
 	void sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value);
+	void sendalive_u40_3_pkt();
+	uint8_t udp_id_counter();
 
 	void generate_244_chksum(std::vector<uint8_t> &data_buf);
 	void generate_40_chksum(std::vector<uint8_t> &data_buf);

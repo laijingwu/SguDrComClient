@@ -44,7 +44,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
 
     /*************************** Packet info part *******************************/
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id++); // packet counter
+    udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x03); // fixed
@@ -128,7 +128,7 @@ void udp_dealer::sendalive_u40_1_pkt() {
     uint16_t data_length = 40;
 
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id++); // packet counter
+    udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x0b); // fixed
@@ -160,7 +160,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
     ////////////////////////////// Data set begin ////////////////////////////////
     std::vector<uint8_t> udp_data_set;
     udp_data_set.push_back(0x07); // fixed
-    udp_data_set.push_back(udp_pkt_id++); // packet counter
+    udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     memcpy(&udp_data_set[2], &data_length, 2); // data length
     udp_data_set.push_back(0x0b); // fixed
@@ -168,7 +168,6 @@ void udp_dealer::sendalive_u40_2_pkt() {
     udp_data_set.insert(udp_data_set.end(), { 0xdc, 0x02 } ); // client version(uncertain) 5.2.1X fixed { 0xdc , 0x02 }
 
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
-    random_byte = xsrand();
     memcpy(&udp_data_set[8], &random_byte, 2); // generate 2 bit by the random function!
 
     udp_data_set.insert(udp_data_set.end(), 6, 0x00); // fixed
@@ -191,7 +190,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
 
     sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
     U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << std::endl);
-    u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
+    // u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 }
 
 void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
@@ -236,6 +235,52 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
     U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << std::endl);
 }
 
+void udp_dealer::sendalive_u40_3_pkt() {
+    uint16_t data_length = 40;
+
+    ////////////////////////////// Data set begin ////////////////////////////////
+    std::vector<uint8_t> udp_data_set;
+    udp_data_set.push_back(0x07); // fixed
+    udp_data_set.push_back(udp_id_counter()); // packet counter
+    udp_data_set.insert(udp_data_set.end(), 2, 0x00);
+    memcpy(&udp_data_set[2], &data_length, 2); // data length
+    udp_data_set.push_back(0x0b); // fixed
+    udp_data_set.push_back(0x01); // packet type
+    udp_data_set.insert(udp_data_set.end(), { 0xdb, 0x02 } ); // client version(uncertain) 5.2.1X fixed { 0xdc , 0x02 }
+
+    udp_data_set.insert(udp_data_set.end(), 2, 0x00);
+    random_byte = xsrand();
+    memcpy(&udp_data_set[8], &random_byte, 2); // generate 2 bit by the random function!
+
+    udp_data_set.insert(udp_data_set.end(), 6, 0x00); // fixed
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    memcpy(&udp_data_set[16], &u40_retrieved_byte[0], 4); // retrieved from last u40 packet(16-19bit)
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00); // fixed
+    // udp_40_chksum, generate by function named generate_40_chksum.
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00); 
+
+    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    memcpy(&udp_data_set[28], &vec_local_ip[0], 4); // local ip
+
+    udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
+    /////////////////////////////// Data set end /////////////////////////////////
+
+    generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
+
+    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
+    U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << std::endl);
+}
+
+uint8_t udp_dealer::udp_id_counter() {
+    if (udp_pkt_id == 0xff)
+        udp_pkt_id = 0;
+    else
+        udp_pkt_id++;
+    return udp_pkt_id;
+}
 
 void udp_dealer::generate_40_chksum(std::vector<uint8_t> &data_buf) {
     int16_t tmp = 0;

@@ -22,6 +22,9 @@ ONLINE_STATE drcom_status = OFFLINE;
 
 bool eap_login(drcom_config *conf)
 {
+    if (t_udp_id != 0)
+        pthread_join(t_udp_id, NULL);
+
 	global_eap_dealer->logoff();
 	global_eap_dealer->logoff();
 	sleep(3); // for completing log off.
@@ -73,6 +76,7 @@ void * thread_eap(void *ptr)
 
 void * thread_udp(void *ptr)
 {
+    int counter = 1;
     drcom_config *conf = (drcom_config *)ptr;
     global_udp_dealer->send_u8_pkt();
     global_udp_dealer->send_u244_pkt(conf->username, "DrCom.Fucker", "223.5.5.5", "114.114.114.114");
@@ -86,6 +90,14 @@ void * thread_udp(void *ptr)
         sleep(6);
         global_udp_dealer->sendalive_u38_pkt(global_eap_dealer->md5_value);
         sleep(3);
+        if (counter >= 10)
+        {
+            global_udp_dealer->sendalive_u40_3_pkt();
+            counter = 1;
+            sleep(1);
+        }
+        else
+            counter++;
     }
 }
 
