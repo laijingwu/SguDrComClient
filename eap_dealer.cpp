@@ -331,7 +331,7 @@ bool eap_dealer::alive_identity() {
 		0x00,           // Type: EAP Packet
 		0x00, 0x00,     // EAP Length
 		0x02,           // Code: Reponse
-		(uint8_t) ++resp_eap_id,    // Id
+		(uint8_t) resp_eap_id,    // Id
 		0x00, 0x00,     // EAP Length
 		0x01            // Type: Identity
 	};   //-std=c++11
@@ -352,7 +352,7 @@ bool eap_dealer::alive_identity() {
 
 	// error.clear();
 	pcap.send_without_response(alive_data, &error);
-	resp_eap_id++;
+	// resp_eap_id++;
 
 	EAP_LOG_INFO("Active! Response, Identity." << std::endl);
 

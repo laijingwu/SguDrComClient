@@ -103,13 +103,14 @@ void * thread_udp(void *ptr)
 
 int main(int argc, char *argv[])
 {
+    config configSettings;
 	if (argc < 2) {
-		cerr << "require a config file path." << endl;
-		return 1;
-	}
+		config configSettings();
+	} else {
+        // get config from config file
+        config configSettings(argv[1]);
+    }
 
-	// get config from config file
-    config configSettings(argv[1]);
     drcom_config conf;
     conf.device = configSettings.Read("device", string("ens33"));
     conf.username = configSettings.Read("username", string("15115011018"));

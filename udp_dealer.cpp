@@ -14,7 +14,7 @@ udp_dealer::udp_dealer(
         port_to(port),
         local_ip(local_ip),
         dst_ip(dst_ip),
-        udp_pkt_id(1u),
+        udp_pkt_id(0u),
         u40_retrieved_byte(4, 0),
         u244_retrieved_byte(4, 0),
         u244_checksum(4, 0) {
@@ -261,11 +261,11 @@ void udp_dealer::sendalive_u40_3_pkt() {
     // udp_40_chksum, generate by function named generate_40_chksum.
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); 
 
-    udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
-    memcpy(&udp_data_set[28], &vec_local_ip[0], 4); // local ip
+    // udp_data_set.insert(udp_data_set.end(), 4, 0x00);
+    // std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    // memcpy(&udp_data_set[28], &vec_local_ip[0], 4); // local ip
 
-    udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
+    udp_data_set.insert(udp_data_set.end(), 12, 0x00); // fixed 8
     /////////////////////////////// Data set end /////////////////////////////////
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
@@ -332,7 +332,7 @@ void udp_dealer::u40_retrieved_last() {
     {
         udp_packet_last.clear();
         sock.recv_udp_pkt(udp_packet_last);
-        if (udp_packet_last[0] == 0x07 && udp_packet_last[2] == 0x28 && (udp_packet_last[5] == 0x02 || udp_packet_last[5] == 0x04)) {
+        if (udp_packet_last[0] == 0x07 && udp_packet_last[4] == 0x0b && udp_packet_last[5] == 0x02) {
             udp_packet_last.resize(40);
             break;
         } else
