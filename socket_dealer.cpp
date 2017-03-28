@@ -18,7 +18,7 @@ socket_dealer::socket_dealer(std::string local_ip, uint16_t m_port) : port(m_por
 	}
 	catch(sgudrcom_exception &e)
 	{
-		SOCKET_LOG_ERR(e.get());
+		SOCKET_LOG_ERR(e.what());
 	}
 }
 
@@ -43,7 +43,7 @@ bool socket_dealer::send_udp_pkt(const char *dest, uint16_t port, std::vector<ui
 	}
 	catch(sgudrcom_exception &e)
 	{
-		SOCKET_LOG_ERR(e.get());
+		SOCKET_LOG_ERR(e.what());
 		return false;
 	}
 	return true;
@@ -68,7 +68,7 @@ bool socket_dealer::recv_udp_pkt(std::vector<uint8_t> &pkt_data) {
 	}
 	catch(sgudrcom_exception &e)
 	{
-		SOCKET_LOG_ERR(e.get());
+		SOCKET_LOG_ERR(e.what());
 		return false;
 	}
 	return true;

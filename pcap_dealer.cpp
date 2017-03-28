@@ -73,7 +73,7 @@ bool pcap_dealer::send(std::vector<uint8_t> data, std::vector<uint8_t> *success,
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.get();
+        *error = e.what();
         return false;
     }
     return true;
@@ -88,7 +88,7 @@ void pcap_dealer::send_without_response(std::vector<uint8_t> data, std::string *
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.get();
+        *error = e.what();
     }
 }
 
@@ -115,7 +115,7 @@ bool pcap_dealer::recv(std::vector<uint8_t> *success, std::string *error) {
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.get();
+        *error = e.what();
         return false;
     }
     return true;
