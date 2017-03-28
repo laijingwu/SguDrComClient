@@ -4,23 +4,23 @@
 #include <iostream>
 #include <sstream>
 #include <string.h>
+#include <exception>
 using namespace std;
 
-class sgudrcom_exception
+class sgudrcom_exception : public exception
 {
 public:
-	sgudrcom_exception(const std::string& message) : message(message) { }
-	sgudrcom_exception(const std::string& message, int err) {
-        std::stringstream stream;
+	sgudrcom_exception(const string& message) : message(message) { }
+	sgudrcom_exception(const string& message, int err) { // system error
+        stringstream stream;
         stream << message << ", errno = " << err << ", desc: " << strerror(err);
         this->message = stream.str();
     }
-	const char * get() const throw() { return message.c_str(); }
-    ~sgudrcom_exception() throw() { }
+	const char * what() const throw() { return message.c_str(); }
+    virtual ~sgudrcom_exception() throw() { }
 
 private:
-	std::string message;
-
+	string message;
 };
 
 #endif

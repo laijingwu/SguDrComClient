@@ -38,9 +38,7 @@ bool eap_login(drcom_config *conf)
 		return false;
 
     // success
-    pthread_mutex_lock(&mutex_status);
     drcom_status = ONLINE;
-    pthread_mutex_unlock(&mutex_status);
     // create udp thread
     int ret = pthread_create(&t_udp_id, NULL, thread_udp, (void *)conf);
     if (ret) {
@@ -53,19 +51,19 @@ void * thread_eap(void *ptr)
 {
     drcom_config *conf = (drcom_config *)ptr;
     EAP_LOG_INFO("Binding for gateway returns." << std::endl);
-    while (pthread_mutex_lock(&mutex_status), drcom_status == ONLINE)
+    while (drcom_status == ONLINE)
     {
-        pthread_mutex_unlock(&mutex_status);
         switch(global_eap_dealer->recv_gateway_returns())
         {
             case -2:           // catch the wrong packet, continue capturing packets.
             case -1: return NULL; // receive packet timeout, continue capturing packets.
             case 1: {
+                cout << "Gateway Returns: Failure." << endl;
                 pthread_mutex_lock(&mutex_status);
                 drcom_status = OFFLINE; // receive the failure packet, try to reconnect
-                pthread_mutex_unlock(&mutex_status);
                 while (!eap_login(conf)) { // relogin
                 }
+                pthread_mutex_unlock(&mutex_status);
                 break;
             }
             case 0: global_eap_dealer->alive_identity(); //request identity and send alive
@@ -81,9 +79,8 @@ void * thread_udp(void *ptr)
     global_udp_dealer->send_u8_pkt();
     global_udp_dealer->send_u244_pkt(conf->username, "DrCom.Fucker", "223.5.5.5", "114.114.114.114");
     sleep(1);
-    while(pthread_mutex_lock(&mutex_status), drcom_status == ONLINE)
+    while(drcom_status == ONLINE)
     {
-        pthread_mutex_unlock(&mutex_status);
         global_udp_dealer->sendalive_u40_1_pkt();
         usleep(50000); // 50ms
         global_udp_dealer->sendalive_u40_2_pkt();
@@ -157,6 +154,7 @@ int main(int argc, char *argv[])
             pthread_mutex_lock(&mutex_status);
             drcom_status = OFFLINE;
             pthread_mutex_unlock(&mutex_status);
+            pthread_mutex_destroy(&mutex_status);
             pthread_join(t_udp_id, NULL); // main thread blocked, waiting the udp thread exit
             SYS_LOG_INFO("UDP thread has closed. [Done]" << endl);
             pthread_kill(t_eap_id, SIGQUIT);
