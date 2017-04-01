@@ -1,12 +1,9 @@
-OBJS=main.o pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o socket_dealer.o
+OBJS=pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o socket_dealer.o main.o
 EXE=main
 CC=g++ -std=c++11
 
 main: $(OBJS)
 	$(CC) -g -Wall -o $(EXE) $(OBJS) -lpcap -lpthread
-
-main.o: def.h get_device_addr.h config.h log.h eap_dealer.h udp_dealer.h
-	$(CC) -c main.cpp
 
 pcap_dealer.o: pcap_dealer.h sgudrcom_exception.h def.h
 	$(CC) -c pcap_dealer.cpp
@@ -31,6 +28,9 @@ config.o: config.h
 
 socket_dealer.o: socket_dealer.h def.h log.h sgudrcom_exception.h
 	$(CC) -c socket_dealer.cpp
+
+main.o: def.h get_device_addr.h config.h log.h eap_dealer.h udp_dealer.h
+	$(CC) -c main.cpp
 
 .PHONY: clean
 clean:

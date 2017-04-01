@@ -17,6 +17,7 @@ public:
         this->message = stream.str();
     }
 	const char * what() const throw() { return message.c_str(); }
+	const char * get() const throw() { return message.c_str(); }
     virtual ~sgudrcom_exception() throw() { }
 
 private:

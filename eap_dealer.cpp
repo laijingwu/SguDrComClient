@@ -350,9 +350,7 @@ bool eap_dealer::alive_identity() {
 		response[j]=alive_data[j];
 	}
 
-	// error.clear();
 	pcap.send_without_response(alive_data, &error);
-	// resp_eap_id++;
 
 	EAP_LOG_INFO("Active! Response, Identity." << std::endl);
 

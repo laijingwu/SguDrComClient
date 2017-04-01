@@ -34,10 +34,9 @@ struct eap_header
 enum ONLINE_STATE
 {
     OFFLINE_PROCESSING,
-    OFFLINE_NOTIFY,
     OFFLINE,
     ONLINE_PROCESSING,
-    ONLINE,
+    ONLINE
 };
 
 #endif

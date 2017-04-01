@@ -1,14 +1,13 @@
 #include "config.h"
-using namespace std;
   
 config::config(string filename, string delimiter, string comment)
     : m_Delimiter(delimiter), m_Comment(comment)
 {
     // Construct a config, getting keys and values from given file
 
-    std::ifstream in(filename.c_str());
+    ifstream in(filename.c_str());
 
-    if (!in) throw File_not_found(filename);
+    if (!in) throw config_exception(1, "Config file not found, filename = " + filename);
 
     in >> (*this);
 }
@@ -16,13 +15,6 @@ config::config(string filename, string delimiter, string comment)
 config::config() : m_Delimiter( string(1, '=') ), m_Comment( string(1, '#') )
 {
     // Construct a Config without a file; empty
-}
-
-bool config::KeyExists(const string& key) const
-{
-    // Indicate whether key is found
-    mapci p = m_Contents.find(key);
-    return (p != m_Contents.end());
 }
 
 /* static */  
@@ -34,7 +26,14 @@ void config::Trim(string& inout_s)
     inout_s.erase(inout_s.find_last_not_of(whitespace) + 1U);
 }
 
-std::ostream& operator<<(std::ostream& os, const config& cf)
+bool config::KeyExists(const string& key) const
+{
+    // Indicate whether key is found
+    mapci p = m_Contents.find(key);
+    return (p != m_Contents.end());
+}
+
+ostream& operator<<(ostream& os, const config& cf)
 {
     // Save a Config to os
     for (config::mapci p = cf.m_Contents.begin();
@@ -42,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const config& cf)
         ++p)
     {
         os << p->first << " " << cf.m_Delimiter << " ";
-        os << p->second << std::endl;
+        os << p->second << endl;
     }
     return os;
 }
@@ -53,7 +52,7 @@ void config::Remove(const string& key)
     m_Contents.erase(m_Contents.find(key));
 }
 
-std::istream& operator>>(std::istream& is, config& cf)
+istream& operator>>(istream& is, config& cf)
 {
     // Load a Config from is
     // Read in keys and values, keeping internal whitespace
@@ -75,7 +74,7 @@ std::istream& operator>>(std::istream& is, config& cf)
         }
         else
         {
-            std::getline(is, line);
+            getline(is, line);
         }
 
         // Ignore comments
@@ -95,7 +94,7 @@ std::istream& operator>>(std::istream& is, config& cf)
             bool terminate = false;
             while (!terminate && is)
             {
-                std::getline(is, nextline);
+                getline(is, nextline);
                 terminate = true;
 
                 string nlcopy = nextline;
@@ -123,10 +122,10 @@ std::istream& operator>>(std::istream& is, config& cf)
     return is;
 }
 
-bool config::FileExist(std::string filename)
+bool config::FileExist(string filename)
 {
     bool exist = false;
-    std::ifstream in(filename.c_str());
+    ifstream in(filename.c_str());
     if (in)  exist = true;
     return exist;
 }
@@ -135,9 +134,9 @@ void config::ReadFile(string filename, string delimiter, string comment)
 {
     m_Delimiter = delimiter;
     m_Comment = comment;
-    std::ifstream in(filename.c_str());
+    ifstream in(filename.c_str());
 
-    if (!in) throw File_not_found(filename);
+    if (!in) throw config_exception(1, "Config file not found, filename = " + filename);
 
     in >> (*this);
 }
