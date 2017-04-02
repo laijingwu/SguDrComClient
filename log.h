@@ -1,4 +1,4 @@
-#ifndef HEADER_LOG_H_
+v#ifndef HEADER_LOG_H_
 #define HEADER_LOG_H_
 
 #include <stddef.h>
@@ -35,7 +35,7 @@ public:
 
         fs.open(filename, ios::app|ios::out);
         if (fs.bad())
-            throw log_exception("Failed to save log, permission denid.");
+            throw log_exception("Failed to save log, permission denied.");
     };
     void write(string linelog) { fs << linelog << endl; }
     static void print(string linelog) { cout << linelog << endl; }
