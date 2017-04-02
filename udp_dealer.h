@@ -9,7 +9,7 @@ using namespace std;
 class udp_dealer
 {
 public:
-	udp_dealer(std::vector<uint8_t> local_mac, std::string local_ip, std::string dst_ip, uint16_t port);
+	udp_dealer(std::vector<uint8_t> local_mac, std::string local_ip, std::string dst_ip, uint32_t port);
 
 	void send_u8_pkt();
 	void send_u244_pkt(std::string login_username, std::string hostname, std::string local_dns_1, std::string local_dns_2);

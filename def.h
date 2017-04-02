@@ -9,6 +9,8 @@
 #include <vector>
 #include <string.h>
 
+#define MAX_RETRY_TIME 2
+
 struct drcom_config
 {
     std::string device;

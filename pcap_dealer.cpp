@@ -19,25 +19,29 @@ bool pcap_dealer::init(std::string device, char filter[]) {
     char errbuf[PCAP_ERRBUF_SIZE] = { 0 };
     struct bpf_program fp;
 
-    handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
+    try
+    {
+        handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
 
-    if (handle == NULL) {
-        throw sgudrcom_exception("pcap_open_live: " + std::string(errbuf));
-        return false;
+        if (handle == NULL) {
+            throw sgudrcom_exception("pcap_open_live: " + std::string(errbuf));
+        }
+
+        if (pcap_datalink(handle) != DLT_EN10MB) {
+            throw sgudrcom_exception("pcap_datalink: not an Ethernet device.");
+        }
+
+        if (pcap_compile(handle, &fp, filter, 0, 0) == -1) {
+            throw sgudrcom_exception(std::string("pcap_compile: ") + pcap_geterr(handle));
+        }
+
+        if (pcap_setfilter(handle, &fp) == -1) {
+            throw sgudrcom_exception(std::string("pcap_setfilter: ") + pcap_geterr(handle));
+        }
     }
-
-    if (pcap_datalink(handle) != DLT_EN10MB) {
-        throw sgudrcom_exception("pcap_datalink: not an Ethernet device.");
-        return false;
-    }
-
-    if (pcap_compile(handle, &fp, filter, 0, 0) == -1) {
-        throw sgudrcom_exception(std::string("pcap_compile: ") + pcap_geterr(handle));
-        return false;
-    }
-
-    if (pcap_setfilter(handle, &fp) == -1) {
-        throw sgudrcom_exception(std::string("pcap_setfilter: ") + pcap_geterr(handle));
+    catch(sgudrcom_exception &e)
+    {
+        // e.what();
         return false;
     }
 

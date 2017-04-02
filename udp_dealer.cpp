@@ -8,8 +8,8 @@ udp_dealer::udp_dealer(
         std::vector<uint8_t> local_mac,
         std::string local_ip,
         std::string dst_ip,
-        uint16_t port
-    ) : sock(local_ip, port),
+        uint32_t port
+    ) : sock(dst_ip, port, local_ip),
         local_mac(local_mac),
         port_to(port),
         local_ip(local_ip),
@@ -24,6 +24,7 @@ udp_dealer::udp_dealer(
 }
 
 void udp_dealer::send_u8_pkt() {
+    U8_LOG_INFO("Start request." << endl);
 
     ////////////////////////////// Data set begin ////////////////////////////////
     std::vector<uint8_t> udp_data_set;
@@ -32,7 +33,7 @@ void udp_dealer::send_u8_pkt() {
     /////////////////////////////// Data set end /////////////////////////////////
 
     sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U8_LOG_INFO("Sent UDP packet [size = 8]." << std::endl);
+    U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
     u244_retrieved_u8(); //save the bits for generating u244 packets.
 }
 
