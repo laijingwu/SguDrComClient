@@ -16,6 +16,11 @@ class log_exception : public exception
 {
 public:
     log_exception(const string& message) : message(message) { }
+    log_exception(const string& message, int err) { // system error
+        stringstream stream;
+        stream << message << ", errno = " << err << ", desc: " << strerror(err);
+        this->message = stream.str();
+    }
     const char * what() const throw() { return message.c_str(); }
     virtual ~log_exception() throw() { }
 
@@ -35,7 +40,7 @@ public:
 
         fs.open(filename, ios::app|ios::out);
         if (fs.bad())
-            throw log_exception("Failed to save log, permission denid.");
+            throw log_exception("Failed to save log.", errno);
     };
     void write(string linelog) { fs << linelog << endl; }
     static void print(string linelog) { cout << linelog << endl; }
