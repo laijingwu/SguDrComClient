@@ -10,12 +10,12 @@ using namespace std;
 class pcap_dealer
 {
 public:
-	pcap_dealer(std::string device, std::vector<uint8_t> mac); // EAP/EAPOL
-	pcap_dealer(std::string device, uint16_t port); // UDP
-	bool init(std::string device, char filter[]);
-	bool send(std::vector<uint8_t> data, std::vector<uint8_t> *success, std::string *error);
-	void send_without_response(std::vector<uint8_t> data, std::string *error);
-	bool recv(std::vector<uint8_t> *success, std::string *error);
+	pcap_dealer(string device, vector<uint8_t> mac); // EAP/EAPOL
+	pcap_dealer(string device, uint16_t port); // UDP
+	bool init(string device, char filter[]);
+	bool send(vector<uint8_t> data, vector<uint8_t> *success, string *error);
+	void send_without_response(vector<uint8_t> data, string *error);
+	bool recv(vector<uint8_t> *success, string *error);
 	virtual ~pcap_dealer();
 
 private:

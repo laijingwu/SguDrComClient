@@ -1,6 +1,5 @@
 #include "socket_dealer.h"
 #include "sgudrcom_exception.h"
-#include "log.h"
 
 socket_dealer::socket_dealer(string gateway_ip, uint32_t gateway_port, string local_ip)
 {

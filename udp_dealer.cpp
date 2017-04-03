@@ -18,9 +18,6 @@ udp_dealer::udp_dealer(
         u40_retrieved_byte(4, 0),
         u244_retrieved_byte(4, 0),
         u244_checksum(4, 0) {
-        //srand(time(NULL));
-        //random_byte = xsrand();
-        //memcpy(&u40_retrieved_byte[0], &random_byte, 4);
 }
 
 int udp_dealer::send_u8_pkt() {

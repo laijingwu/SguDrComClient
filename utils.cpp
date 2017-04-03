@@ -14,7 +14,7 @@
                                 ((((unsigned long)(n) & 0xFF000000)) >> 24))
 #endif
 
-std::vector<uint8_t> get_md5_digest(std::vector<uint8_t>& data) {
+vector<uint8_t> get_md5_digest(vector<uint8_t>& data) {
     md5_byte_t digest[16];
     md5_state_t state;
     
@@ -22,18 +22,18 @@ std::vector<uint8_t> get_md5_digest(std::vector<uint8_t>& data) {
     md5_append(&state, &data[0], (int) data.size());
     md5_finish(&state, digest);
     
-    return std::vector<uint8_t>(digest, digest + 16);
+    return vector<uint8_t>(digest, digest + 16);
 }
 
-std::string hex_to_str(uint8_t *hex, size_t len, char separator) {
+string hex_to_str(uint8_t *hex, size_t len, char separator) {
     char buf[1024] = {0};
     for (size_t i = 0; i < len; i++)
         sprintf(buf + strlen(buf), "%02x%c", hex[i], (i < len - 1) ? separator : 0);
     
-    return std::string(buf);
+    return string(buf);
 }
 
-void hex_dump(std::vector<uint8_t> hex) {
+void hex_dump(vector<uint8_t> hex) {
     char buf[1024];
     
     for (size_t i = 0; i < hex.size(); i += 16)
@@ -55,19 +55,19 @@ void hex_dump(std::vector<uint8_t> hex) {
                 sprintf(buf + strlen(buf), "%c", isprint(hex[i+j]) ? hex[i+j] : '.');
         
         #ifdef SGUDRCOM_DEBUG
-                std::clog << buf << std::endl;
+                clog << buf << endl;
             #ifdef SGUDRCOM_PRINT_DBG_ON_SCREEN
-                std::cout << buf << std::endl;
+                cout << buf << endl;
             #endif
         #endif
     }
 }
 
-std::vector<std::string> split_string(std::string src, char delimiter, bool append_last) {
-    std::string::size_type pos = 0;
-    std::vector<std::string> ret;
+vector<string> split_string(string src, char delimiter, bool append_last) {
+    string::size_type pos = 0;
+    vector<string> ret;
     
-    while ((pos = src.find(delimiter)) != std::string::npos)
+    while ((pos = src.find(delimiter)) != string::npos)
     {
         ret.push_back(src.substr(0, pos));
         src = src.substr(pos + 1);
@@ -79,8 +79,8 @@ std::vector<std::string> split_string(std::string src, char delimiter, bool appe
     return ret;
 }
 
-std::vector<uint8_t> str_ip_to_vec(std::string ip) {
-    std::vector<uint8_t> ret(4, 0);
+vector<uint8_t> str_ip_to_vec(string ip) {
+    vector<uint8_t> ret(4, 0);
     
     auto vec_addr = split_string(ip, '.');
     if (vec_addr.size() < 4)
@@ -94,8 +94,8 @@ std::vector<uint8_t> str_ip_to_vec(std::string ip) {
     return ret;
 }
 
-std::vector<uint8_t> str_mac_to_vec(std::string mac) {
-    std::vector<uint8_t> ret;
+vector<uint8_t> str_mac_to_vec(string mac) {
+    vector<uint8_t> ret;
     
     auto chartohex = [](char c) -> uint8_t {
         if (c >= '0' && c <= '9')
@@ -119,8 +119,8 @@ std::vector<uint8_t> str_mac_to_vec(std::string mac) {
     return ret;
 }
 
-std::vector<uint8_t> str_to_vec(std::string str) {
-    std::vector<uint8_t> ret(str.length(), 0);
+vector<uint8_t> str_to_vec(string str) {
+    vector<uint8_t> ret(str.length(), 0);
     memcpy(&ret[0], &str[0], str.length());
     return ret;
 }

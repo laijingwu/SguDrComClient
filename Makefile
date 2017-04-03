@@ -20,13 +20,13 @@ md5.o: md5.h
 utils.o: utils.h get_device_addr.h md5.h log.h
 	$(CC) -c utils.cpp
 
-udp_dealer.o: udp_dealer.h def.h pcap_dealer.h log.h
+udp_dealer.o: udp_dealer.h def.h socket_dealer.h log.h
 	$(CC) -c udp_dealer.cpp
 
 config.o: config.h
 	$(CC) -c config.cpp
 
-socket_dealer.o: socket_dealer.h def.h log.h sgudrcom_exception.h
+socket_dealer.o: socket_dealer.h def.h sgudrcom_exception.h log.h get_device_addr.h utils.h
 	$(CC) -c socket_dealer.cpp
 
 main.o: def.h get_device_addr.h config.h log.h eap_dealer.h udp_dealer.h
