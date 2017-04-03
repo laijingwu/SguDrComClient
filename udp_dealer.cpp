@@ -5,9 +5,9 @@
 #include "sgudrcom_exception.h"
 
 udp_dealer::udp_dealer(
-        std::vector<uint8_t> local_mac,
-        std::string local_ip,
-        std::string dst_ip,
+        vector<uint8_t> local_mac,
+        string local_ip,
+        string dst_ip,
         uint32_t port
     ) : sock(dst_ip, port, local_ip),
         local_mac(local_mac),
@@ -23,24 +23,56 @@ udp_dealer::udp_dealer(
         //memcpy(&u40_retrieved_byte[0], &random_byte, 4);
 }
 
-void udp_dealer::send_u8_pkt() {
-    U8_LOG_INFO("Start request." << endl);
+int udp_dealer::send_u8_pkt() {
+    U8_LOG_INFO("Start to send." << endl);
 
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     udp_data_set.insert(udp_data_set.end(), { 0x07, 0x00, 0x08, 0x00, 0x01 } );
     udp_data_set.insert(udp_data_set.end(), 3, 0x00);
     /////////////////////////////// Data set end /////////////////////////////////
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
-    u244_retrieved_u8(); //save the bits for generating u244 packets.
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
+        
+        if (recv[0] == 0x4d) // Notification
+        {
+            U8_LOG_INFO("Received 'Notification', send start request again." << endl);
+            return send_u8_pkt();
+        }
+
+        return u244_retrieved_u8(recv); //save the bits for generating u244 packets.
+    };
+
+    auto handler_error = [&](string error) {
+        U8_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U8_LOG_ERR("Failed to perform u8, retry times = " << retry_times << endl);
+            U8_LOG_INFO("Try to perform u8 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U8_LOG_ERR("Failed to perfrom u8, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U8_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
-void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname, std::string local_dns_1, std::string local_dns_2) {
+int udp_dealer::send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2) {
 
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     uint16_t data_length = 244;
 
     /*************************** Packet info part *******************************/
@@ -54,7 +86,7 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     /**************************** Address part **********************************/
     udp_data_set.insert(udp_data_set.end(), 6, 0x00);
     memcpy(&udp_data_set[6], &local_mac[0], 6); // local mac
-    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
     memcpy(&udp_data_set[12], &vec_local_ip[0], 4); // local ip
 
@@ -71,11 +103,11 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); // fixed
 
     /*************************** Basic info part ********************************/
-    std::vector<uint8_t> vec_username = str_to_vec(login_username);
+    vector<uint8_t> vec_username = str_to_vec(login_username);
     udp_data_set.insert(udp_data_set.end(), 11, 0x00);
     memcpy(&udp_data_set[32], &vec_username[0], 11); // username
 
-    std::vector<uint8_t> vec_hostname = str_to_vec(hostname);
+    vector<uint8_t> vec_hostname = str_to_vec(hostname);
     udp_data_set.insert(udp_data_set.end(), 15, 0x00); // fixed
     memcpy(&udp_data_set[43], &hostname[0], (hostname.size() >= 15 ? 15 : hostname.size()) );
 
@@ -83,12 +115,12 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
 
     /****************************** DNS part ************************************/
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    std::vector<uint8_t> vec_dns_1 = str_ip_to_vec(local_dns_1);
+    vector<uint8_t> vec_dns_1 = str_ip_to_vec(local_dns_1);
     memcpy(&udp_data_set[75], &vec_dns_1[0], 4); // local dns 1
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); // fixed
 
-    std::vector<uint8_t> vec_dns_2 = str_ip_to_vec(local_dns_2);
+    vector<uint8_t> vec_dns_2 = str_ip_to_vec(local_dns_2);
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
     memcpy(&udp_data_set[83], &vec_dns_2[0], 4); // local dns 2
 
@@ -117,15 +149,40 @@ void udp_dealer::send_u244_pkt(std::string login_username, std::string hostname,
     generate_244_chksum(udp_data_set); // fill in the checksum bits of 244 bytes packet.
     memcpy(&u244_checksum[0], &udp_data_set[24], 4); // save the checksum for 38 bytes packet.
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U244_LOG_INFO("Sent UDP packet [size = 244]." << std::endl);
-    u38_retrieved_u244resp(); //save the bits for generating the checksum bits in u38 packets.
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U244_LOG_INFO("Sent UDP packet [size = 244]." << endl);
+        return u38_retrieved_u244resp(recv); //save the bits for generating the checksum bits in u38 packets.
+    };
+
+    auto handler_error = [&](string error) {
+        U244_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U244_LOG_ERR("Failed to perform u244, retry times = " << retry_times << endl);
+            U244_LOG_INFO("Try to perform u244 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U8_LOG_ERR("Failed to perfrom u244, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U244_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
-void udp_dealer::sendalive_u40_1_pkt() {
+int udp_dealer::sendalive_u40_1_pkt() {
     
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     uint16_t data_length = 40;
 
     udp_data_set.push_back(0x07); // fixed
@@ -150,16 +207,41 @@ void udp_dealer::sendalive_u40_1_pkt() {
     udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
     /////////////////////////////// Data set end /////////////////////////////////
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40]." << std::endl);
-    u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40]." << endl);
+        return u40_retrieved_last(recv); //save the bits for generating the next u40 packets to send.
+    };
+
+    auto handler_error = [&](string error) {
+        U40_1_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U40_1_LOG_ERR("Failed to perform u40_1, retry times = " << retry_times << endl);
+            U40_1_LOG_INFO("Try to perform u40_1 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U40_1_LOG_ERR("Failed to perfrom u40_1, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U40_1_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
-void udp_dealer::sendalive_u40_2_pkt() {
+int udp_dealer::sendalive_u40_2_pkt() {
     uint16_t data_length = 40;
 
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     udp_data_set.push_back(0x07); // fixed
     udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
@@ -181,7 +263,7 @@ void udp_dealer::sendalive_u40_2_pkt() {
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); 
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
     memcpy(&udp_data_set[28], &vec_local_ip[0], 4); // local ip
 
     udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
@@ -189,15 +271,39 @@ void udp_dealer::sendalive_u40_2_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << std::endl);
-    // u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << endl);
+    };
+
+    auto handler_error = [&](string error) {
+        U40_2_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U40_2_LOG_ERR("Failed to perform u40_2, retry times = " << retry_times << endl);
+            U40_2_LOG_INFO("Try to perform u40_2 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U40_2_LOG_ERR("Failed to perfrom u40_2, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U40_2_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
-void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
+int udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
 
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     udp_data_set.push_back(0xff); //fixed
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
@@ -210,7 +316,7 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
     udp_data_set.insert(udp_data_set.end(), { 0x44, 0x72, 0x63, 0x6f }); //fixed string "Drco"
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    std::vector<uint8_t> vec_server_ip = str_ip_to_vec(dst_ip);
+    vector<uint8_t> vec_server_ip = str_ip_to_vec(dst_ip);
     memcpy(&udp_data_set[24], &vec_server_ip[0], 4); // server ip
 
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
@@ -218,7 +324,7 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
 
 
     udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
     memcpy(&udp_data_set[30], &vec_local_ip[0], 4); // local ip
 
     udp_data_set.push_back(0x01); //fixed
@@ -232,15 +338,40 @@ void udp_dealer::sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value) {
     memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
     /////////////////////////////// Data set end /////////////////////////////////
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << std::endl);
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << endl);
+    };
+
+    auto handler_error = [&](string error) {
+        U38_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U38_LOG_ERR("Failed to perform u38, retry times = " << retry_times << endl);
+            U38_LOG_INFO("Try to perform u38 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U38_LOG_ERR("Failed to perfrom u38, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U38_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
-void udp_dealer::sendalive_u40_3_pkt() {
+int udp_dealer::sendalive_u40_3_pkt() {
     uint16_t data_length = 40;
 
     ////////////////////////////// Data set begin ////////////////////////////////
-    std::vector<uint8_t> udp_data_set;
+    vector<uint8_t> udp_data_set;
     udp_data_set.push_back(0x07); // fixed
     udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
@@ -263,7 +394,7 @@ void udp_dealer::sendalive_u40_3_pkt() {
     udp_data_set.insert(udp_data_set.end(), 4, 0x00); 
 
     // udp_data_set.insert(udp_data_set.end(), 4, 0x00);
-    // std::vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
+    // vector<uint8_t> vec_local_ip = str_ip_to_vec(local_ip);
     // memcpy(&udp_data_set[28], &vec_local_ip[0], 4); // local ip
 
     udp_data_set.insert(udp_data_set.end(), 12, 0x00); // fixed 8
@@ -271,8 +402,33 @@ void udp_dealer::sendalive_u40_3_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    sock.send_udp_pkt(dst_ip.c_str(), port_to, udp_data_set);
-    U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << std::endl);
+    /* prepare to send */
+    auto handler_success = [&](vector<uint8_t> recv) -> int {
+        U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << endl);
+    };
+
+    auto handler_error = [&](string error) {
+        U40_3_LOG_ERR(error << endl)
+    };
+
+    int retry_times = 0, ret;
+    try {
+        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
+        {
+            retry_times++;
+            U40_3_LOG_ERR("Failed to perform u40_3, retry times = " << retry_times << endl);
+            U40_3_LOG_INFO("Try to perform u40_3 after 2 seconds." << endl);
+            sleep(2);
+        }
+        if (retry_times == MAX_RETRY_TIME)
+        {
+            U40_3_LOG_ERR("Failed to perfrom u40_3, stopped." << endl);
+            return -1;
+        }
+    } catch (exception &e) {
+        U40_3_LOG_ERR(e.what() << endl);
+    }
+    return ret;
 }
 
 uint8_t udp_dealer::udp_id_counter() {
@@ -283,7 +439,7 @@ uint8_t udp_dealer::udp_id_counter() {
     return udp_pkt_id;
 }
 
-void udp_dealer::generate_40_chksum(std::vector<uint8_t> &data_buf) {
+void udp_dealer::generate_40_chksum(vector<uint8_t> &data_buf) {
     int16_t tmp = 0;
     uint16_t mid = 0;
     for (int i = 0; i < 20; i++) {
@@ -294,7 +450,7 @@ void udp_dealer::generate_40_chksum(std::vector<uint8_t> &data_buf) {
     memcpy(&data_buf[24], &result , 4);
 }
 
-void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
+void udp_dealer::generate_244_chksum(vector<uint8_t> &data_buf) {
     uint32_t drcom_protocol_param  = 20000711;
     memcpy(&data_buf[24], &drcom_protocol_param, 4);
     data_buf[28] = 126;
@@ -313,47 +469,31 @@ void udp_dealer::generate_244_chksum(std::vector<uint8_t> &data_buf) {
 }
 
 //retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
-void udp_dealer::u244_retrieved_u8() {
-    std::vector<uint8_t> udp_packet_u8resp;
-    while (true)
-    {
-        udp_packet_u8resp.clear();
-        sock.recv_udp_pkt(udp_packet_u8resp);
-        if (udp_packet_u8resp[0] != 0x07) continue;
-        udp_packet_u8resp.resize(32);
-        break;
-    }
+int udp_dealer::u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp) {
+    if (udp_packet_u8resp[0] != 0x07) return -1;
+    
+    udp_packet_u8resp.resize(32);
     memcpy(&u244_retrieved_byte[0], &udp_packet_u8resp[8], 4);
+    return 0;
 }
 
 //retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
-void udp_dealer::u40_retrieved_last() {
-    std::vector<uint8_t> udp_packet_last;
-    while (true)
+int udp_dealer::u40_retrieved_last(vector<uint8_t> &udp_packet_last) {
+    if (udp_packet_last[0] == 0x07 && udp_packet_last[4] == 0x0b && udp_packet_last[5] == 0x02)
     {
-        udp_packet_last.clear();
-        sock.recv_udp_pkt(udp_packet_last);
-        if (udp_packet_last[0] == 0x07 && udp_packet_last[4] == 0x0b && udp_packet_last[5] == 0x02) {
-            udp_packet_last.resize(40);
-            break;
-        } else
-            continue;
+        udp_packet_last.resize(40);
+        memcpy(&u40_retrieved_byte[0], &udp_packet_last[16], 4);
+        return 0;
     }
-    memcpy(&u40_retrieved_byte[0], &udp_packet_last[16], 4);
+    else
+        return -1;
 }
 
-//save the bits after calculation to std::vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
-void udp_dealer::u38_retrieved_u244resp() {
-    std::vector<uint8_t> udp_packet_u244resp;
-    while (true)
-    {
-        udp_packet_u244resp.clear();
-        sock.recv_udp_pkt(udp_packet_u244resp);
-        if (udp_packet_u244resp[0] != 0x07 && udp_packet_u244resp[4] != 0x04) continue;
-        udp_packet_u244resp.resize(48);
-        break;
-    }
-
+//save the bits after calculation to vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
+int udp_dealer::u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp) {
+    if (udp_packet_u244resp[0] != 0x07 && udp_packet_u244resp[4] != 0x04) return -1;
+    
+    udp_packet_u244resp.resize(48);
     memcpy(&u38_reserved_byte[0], &udp_packet_u244resp[24], 2);
     memcpy(&u38_reserved_byte[2], &udp_packet_u244resp[31], 1);
 
@@ -368,6 +508,7 @@ void udp_dealer::u38_retrieved_u244resp() {
     if (source_bit % 2 != 0)
         tmp |= 128;
     memcpy(&u38_reserved_byte[2], &tmp, 1);
+    return 0;
 }
 
 udp_dealer::~udp_dealer() {
