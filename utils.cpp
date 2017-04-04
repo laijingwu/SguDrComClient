@@ -54,12 +54,7 @@ void hex_dump(vector<uint8_t> hex) {
             if (i + j < hex.size())
                 sprintf(buf + strlen(buf), "%c", isprint(hex[i+j]) ? hex[i+j] : '.');
         
-        #ifdef SGUDRCOM_DEBUG
-                clog << buf << endl;
-            #ifdef SGUDRCOM_PRINT_DBG_ON_SCREEN
-                cout << buf << endl;
-            #endif
-        #endif
+        cout << buf << endl;
     }
 }
 

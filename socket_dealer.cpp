@@ -6,7 +6,7 @@ socket_dealer::socket_dealer(string gateway_ip, uint16_t gateway_port, string lo
 	if (client_fd < 0)
 		throw sgudrcom_exception("socket", errno);
 
-	auto flag = fcntl(client_fd, F_GETFL, 0);
+	int flag = fcntl(client_fd, F_GETFL, 0);
     fcntl(client_fd, F_SETFL, flag | O_NONBLOCK);
 
 	struct sockaddr_in local;
@@ -49,7 +49,11 @@ bool socket_dealer::send_udp_pkt(vector<uint8_t> &udp_data_set, vector<uint8_t> 
         {
             vector<uint8_t> buf(RECV_BUFF_LEN, 0);
             size_t addr_len = sizeof(src_addr);
-            int len = (int) recvfrom(client_fd, (char *)&buf[0], RECV_BUFF_LEN, 0, (struct sockaddr *)&src_addr, (socklen_t *)&addr_len);
+            int len;
+            while (buf[0] == 0x4d || buf[0] == 0x00) // Notification
+            {
+                len = (int) recvfrom(client_fd, (char *)&buf[0], RECV_BUFF_LEN, 0, (struct sockaddr *)&src_addr, (socklen_t *)&addr_len);
+            }
             
             if (len <= 0)
                 break; // connection closed
@@ -69,7 +73,7 @@ bool socket_dealer::send_udp_pkt(vector<uint8_t> &udp_data_set, vector<uint8_t> 
 	return true;
 }
 
-int socket_dealer::wait_for_socket(int timeout_sec)
+int socket_dealer::wait_for_socket(int timeout_milisec)
 {
     fd_set fds;
     struct timeval tv;
@@ -78,7 +82,7 @@ int socket_dealer::wait_for_socket(int timeout_sec)
     FD_SET(client_fd, &fds);
     
     tv.tv_usec = 0;
-    tv.tv_sec = timeout_sec / 1000;
+    tv.tv_sec = timeout_milisec / 1000;
     
     return select(client_fd + 1, &fds, NULL, NULL, &tv);
 }

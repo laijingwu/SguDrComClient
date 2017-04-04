@@ -10,8 +10,6 @@
 #include <sstream>
 using namespace std;
 
-// #define SGUDRCOM_DEBUG
-
 class log_exception : public exception
 {
 public:
@@ -42,8 +40,8 @@ public:
         if (fs.bad())
             throw log_exception("Failed to save log.", errno);
     };
-    void write(string linelog) { fs << linelog << endl; }
-    static void print(string linelog) { cout << linelog << endl; }
+    void write(string linelog) { fs << linelog; }
+    static void print(string linelog) { cout << linelog; } // cout << linelog << endl;
     ~log() { fs.close(); };
     
 private:

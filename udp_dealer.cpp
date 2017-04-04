@@ -38,7 +38,7 @@ bool udp_dealer::send_u8_pkt() {
         retry_times++;
         U8_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U8_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -141,7 +141,7 @@ bool udp_dealer::send_u244_pkt(string login_username, string hostname, string lo
         retry_times++;
         U244_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U244_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -191,7 +191,7 @@ bool udp_dealer::sendalive_u40_1_pkt() {
         retry_times++;
         U40_1_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U40_1_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -247,7 +247,7 @@ bool udp_dealer::sendalive_u40_2_pkt() {
         retry_times++;
         U40_2_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U40_2_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -306,7 +306,7 @@ bool udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
         retry_times++;
         U38_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U38_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -361,7 +361,7 @@ bool udp_dealer::sendalive_u40_3_pkt() {
         retry_times++;
         U40_3_LOG_ERR(error << ", retry times = " << retry_times << endl);
         U40_3_LOG_INFO("Try again after 2 seconds." << endl);
-        sleep(2);
+        sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
@@ -447,6 +447,15 @@ bool udp_dealer::u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp) {
         tmp |= 128;
     memcpy(&u38_reserved_byte[2], &tmp, 1);
     return true;
+}
+
+// to clear the params after reconnect
+void udp_dealer::clear_udp_param()
+{
+    udp_pkt_id = 0u;
+    u40_retrieved_byte.assign(4, 0);
+    u244_retrieved_byte.assign(4, 0);
+    u244_checksum.assign(4, 0);
 }
 
 udp_dealer::~udp_dealer() {

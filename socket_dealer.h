@@ -16,7 +16,7 @@ class socket_dealer
 public:
 	socket_dealer(string gateway_ip, uint16_t gateway_port, string local_ip);
 	bool send_udp_pkt(vector<uint8_t> &udp_data_set, vector<uint8_t> &recv, string &error);
-	int wait_for_socket(int timeout_sec = 5); // timeout
+	int wait_for_socket(int timeout_milisec = SOCKET_TIMEOUT_MILISEC);
 
 	virtual ~socket_dealer();
 
