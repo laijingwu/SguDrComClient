@@ -1,4 +1,5 @@
 #include "def.h"
+#include "log.h"
 #include "pcap_dealer.h"
 #include "sgudrcom_exception.h"
 
