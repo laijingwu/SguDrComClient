@@ -9,21 +9,21 @@ using namespace std;
 class udp_dealer
 {
 public:
-	udp_dealer(vector<uint8_t> local_mac, string local_ip, string dst_ip, uint32_t port);
+	udp_dealer(vector<uint8_t> local_mac, string local_ip, string dst_ip, uint16_t port);
 
-	int send_u8_pkt();
-	int send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2);
-	int sendalive_u40_1_pkt();
-	int sendalive_u40_2_pkt();
-	int sendalive_u38_pkt(vector<uint8_t> md5_challenge_value);
-	int sendalive_u40_3_pkt();
+	bool send_u8_pkt();
+	bool send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2);
+	bool sendalive_u40_1_pkt();
+	bool sendalive_u40_2_pkt();
+	bool sendalive_u38_pkt(vector<uint8_t> md5_challenge_value);
+	bool sendalive_u40_3_pkt();
 	uint8_t udp_id_counter();
 
 	void generate_244_chksum(vector<uint8_t> &data_buf);
 	void generate_40_chksum(vector<uint8_t> &data_buf);
-	int u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp);
-	int u40_retrieved_last(vector<uint8_t> &udp_packet_last);
-	int u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp);
+	bool u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp);
+	bool u40_retrieved_last(vector<uint8_t> &udp_packet_last);
+	bool u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp);
 
 	virtual ~udp_dealer();
 	

@@ -8,7 +8,7 @@ udp_dealer::udp_dealer(
         vector<uint8_t> local_mac,
         string local_ip,
         string dst_ip,
-        uint32_t port
+        uint16_t port
     ) : sock(dst_ip, port, local_ip),
         local_mac(local_mac),
         port_to(port),
@@ -20,7 +20,7 @@ udp_dealer::udp_dealer(
         u244_checksum(4, 0) {
 }
 
-int udp_dealer::send_u8_pkt() {
+bool udp_dealer::send_u8_pkt() {
     U8_LOG_INFO("Start to send." << endl);
 
     ////////////////////////////// Data set begin ////////////////////////////////
@@ -29,44 +29,29 @@ int udp_dealer::send_u8_pkt() {
     udp_data_set.insert(udp_data_set.end(), 3, 0x00);
     /////////////////////////////// Data set end /////////////////////////////////
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
-        
-        if (recv[0] == 0x4d) // Notification
-        {
-            U8_LOG_INFO("Received 'Notification', send start request again." << endl);
-            return send_u8_pkt();
-        }
-
-        return u244_retrieved_u8(recv); //save the bits for generating u244 packets.
-    };
-
-    auto handler_error = [&](string error) {
-        U8_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U8_LOG_ERR("Failed to perform u8, retry times = " << retry_times << endl);
-            U8_LOG_INFO("Try to perform u8 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U8_LOG_ERR("Failed to perfrom u8, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U8_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_u8resp;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_u8resp, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U8_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U8_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U8_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
+    if (!(u244_retrieved_u8(udp_packet_u8resp))) // save the bits for generating u244 packets.
+        return send_u8_pkt();
     return ret;
 }
 
-int udp_dealer::send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2) {
+bool udp_dealer::send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2) {
 
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -146,37 +131,30 @@ int udp_dealer::send_u244_pkt(string login_username, string hostname, string loc
     generate_244_chksum(udp_data_set); // fill in the checksum bits of 244 bytes packet.
     memcpy(&u244_checksum[0], &udp_data_set[24], 4); // save the checksum for 38 bytes packet.
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U244_LOG_INFO("Sent UDP packet [size = 244]." << endl);
-        return u38_retrieved_u244resp(recv); //save the bits for generating the checksum bits in u38 packets.
-    };
 
-    auto handler_error = [&](string error) {
-        U244_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U244_LOG_ERR("Failed to perform u244, retry times = " << retry_times << endl);
-            U244_LOG_INFO("Try to perform u244 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U8_LOG_ERR("Failed to perfrom u244, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U244_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_u244resp;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_u244resp, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U244_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U244_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U244_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U244_LOG_INFO("Sent UDP packet [size = 244]." << endl);
+    if (!(u38_retrieved_u244resp(udp_packet_u244resp))) // save the bits for generating the checksum bits in u38 packets.
+        return send_u244_pkt(login_username, hostname, local_dns_1, local_dns_2);
     return ret;
 }
 
-int udp_dealer::sendalive_u40_1_pkt() {
+bool udp_dealer::sendalive_u40_1_pkt() {
     
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -204,37 +182,29 @@ int udp_dealer::sendalive_u40_1_pkt() {
     udp_data_set.insert(udp_data_set.end(), 8, 0x00); // fixed
     /////////////////////////////// Data set end /////////////////////////////////
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40]." << endl);
-        return u40_retrieved_last(recv); //save the bits for generating the next u40 packets to send.
-    };
-
-    auto handler_error = [&](string error) {
-        U40_1_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U40_1_LOG_ERR("Failed to perform u40_1, retry times = " << retry_times << endl);
-            U40_1_LOG_INFO("Try to perform u40_1 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U40_1_LOG_ERR("Failed to perfrom u40_1, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U40_1_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_last;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_last, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U40_1_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U40_1_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U40_1_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40]." << endl);
+    if (!(u40_retrieved_last(udp_packet_last))) // save the bits for generating the next u40 packets to send.
+        return sendalive_u40_1_pkt();
     return ret;
 }
 
-int udp_dealer::sendalive_u40_2_pkt() {
+bool udp_dealer::sendalive_u40_2_pkt() {
     uint16_t data_length = 40;
 
     ////////////////////////////// Data set begin ////////////////////////////////
@@ -268,36 +238,28 @@ int udp_dealer::sendalive_u40_2_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << endl);
-    };
-
-    auto handler_error = [&](string error) {
-        U40_2_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U40_2_LOG_ERR("Failed to perform u40_2, retry times = " << retry_times << endl);
-            U40_2_LOG_INFO("Try to perform u40_2 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U40_2_LOG_ERR("Failed to perfrom u40_2, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U40_2_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_last;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_last, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U40_2_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U40_2_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U40_2_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << endl);
     return ret;
+    // u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 }
 
-int udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
+bool udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
 
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -335,36 +297,27 @@ int udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
     memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
     /////////////////////////////// Data set end /////////////////////////////////
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << endl);
-    };
-
-    auto handler_error = [&](string error) {
-        U38_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U38_LOG_ERR("Failed to perform u38, retry times = " << retry_times << endl);
-            U38_LOG_INFO("Try to perform u38 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U38_LOG_ERR("Failed to perfrom u38, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U38_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_recv;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_recv, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U38_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U38_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U38_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << endl);
     return ret;
 }
 
-int udp_dealer::sendalive_u40_3_pkt() {
+bool udp_dealer::sendalive_u40_3_pkt() {
     uint16_t data_length = 40;
 
     ////////////////////////////// Data set begin ////////////////////////////////
@@ -399,32 +352,23 @@ int udp_dealer::sendalive_u40_3_pkt() {
 
     generate_40_chksum(udp_data_set); //Fill in the 40 byte packet checksum;
 
-    /* prepare to send */
-    auto handler_success = [&](vector<uint8_t> recv) -> int {
-        U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << endl);
-    };
-
-    auto handler_error = [&](string error) {
-        U40_3_LOG_ERR(error << endl)
-    };
-
-    int retry_times = 0, ret;
-    try {
-        while ((ret = sock.post(udp_data_set, handler_success, handler_error)) < 0 && retry_times < MAX_RETRY_TIME)
-        {
-            retry_times++;
-            U40_3_LOG_ERR("Failed to perform u40_3, retry times = " << retry_times << endl);
-            U40_3_LOG_INFO("Try to perform u40_3 after 2 seconds." << endl);
-            sleep(2);
-        }
-        if (retry_times == MAX_RETRY_TIME)
-        {
-            U40_3_LOG_ERR("Failed to perfrom u40_3, stopped." << endl);
-            return -1;
-        }
-    } catch (exception &e) {
-        U40_3_LOG_ERR(e.what() << endl);
+    vector<uint8_t> udp_packet_recv;
+    string error;
+    int retry_times = 0;
+    bool ret;
+    while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_recv, error)) && retry_times < MAX_RETRY_TIME)
+    {
+        retry_times++;
+        U40_3_LOG_ERR(error << ", retry times = " << retry_times << endl);
+        U40_3_LOG_INFO("Try again after 2 seconds." << endl);
+        sleep(2);
     }
+    if (retry_times == MAX_RETRY_TIME)
+    {
+        U40_3_LOG_ERR("Send or Recv failed, stopped." << endl);
+        return false;
+    }
+    U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << endl);
     return ret;
 }
 
@@ -465,32 +409,29 @@ void udp_dealer::generate_244_chksum(vector<uint8_t> &data_buf) {
     memcpy(&data_buf[24], &result, 4);
 }
 
-//retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
-int udp_dealer::u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp) {
-    if (udp_packet_u8resp[0] != 0x07) return -1;
-    
+// retrieve bit 8-11 from last 8 bytes response packet to fill the 20-23 bit of 244 bytes packet.
+bool udp_dealer::u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp) {
+    if (udp_packet_u8resp[0] != 0x07) return false;
     udp_packet_u8resp.resize(32);
     memcpy(&u244_retrieved_byte[0], &udp_packet_u8resp[8], 4);
-    return 0;
+    return true;
 }
 
-//retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
-int udp_dealer::u40_retrieved_last(vector<uint8_t> &udp_packet_last) {
-    if (udp_packet_last[0] == 0x07 && udp_packet_last[4] == 0x0b && udp_packet_last[5] == 0x02)
-    {
+// retrieve bit 16-19 from last 40 bytes response packet to fill the 16-19 bit of next 40 bytes alive packet.
+bool udp_dealer::u40_retrieved_last(vector<uint8_t> &udp_packet_last) {
+    if (udp_packet_last[0] == 0x07 && udp_packet_last[4] == 0x0b && udp_packet_last[5] == 0x02) {
         udp_packet_last.resize(40);
         memcpy(&u40_retrieved_byte[0], &udp_packet_last[16], 4);
-        return 0;
-    }
-    else
-        return -1;
+        return true;
+    } else
+        return false;
 }
 
-//save the bits after calculation to vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
-int udp_dealer::u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp) {
-    if (udp_packet_u244resp[0] != 0x07 && udp_packet_u244resp[4] != 0x04) return -1;
-    
+// save the bits after calculation to vector<uint8_t> u38_reserved_byte in order to generate the u38 packet.
+bool udp_dealer::u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp) {
+    if (udp_packet_u244resp[0] != 0x07 && udp_packet_u244resp[4] != 0x04) return false;
     udp_packet_u244resp.resize(48);
+
     memcpy(&u38_reserved_byte[0], &udp_packet_u244resp[24], 2);
     memcpy(&u38_reserved_byte[2], &udp_packet_u244resp[31], 1);
 
@@ -505,7 +446,7 @@ int udp_dealer::u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp) {
     if (source_bit % 2 != 0)
         tmp |= 128;
     memcpy(&u38_reserved_byte[2], &tmp, 1);
-    return 0;
+    return true;
 }
 
 udp_dealer::~udp_dealer() {
