@@ -21,7 +21,7 @@ udp_dealer::udp_dealer(
 }
 
 bool udp_dealer::send_u8_pkt() {
-    U8_LOG_INFO("Start to send." << endl);
+    U8_LOG_INFO("Start to send.");
 
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -36,16 +36,16 @@ bool udp_dealer::send_u8_pkt() {
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_u8resp, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U8_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U8_LOG_INFO("Try again after 2 seconds." << endl);
+        U8_LOG_ERR(error << ", retry times = " << retry_times);
+        U8_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U8_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U8_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U8_LOG_INFO("Sent UDP packet [size = 8]." << endl);
+    U8_LOG_INFO("Sent UDP packet [size = 8].");
     if (!(u244_retrieved_u8(udp_packet_u8resp))) // save the bits for generating u244 packets.
         return send_u8_pkt();
     return ret;
@@ -139,16 +139,16 @@ bool udp_dealer::send_u244_pkt(string login_username, string hostname, string lo
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_u244resp, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U244_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U244_LOG_INFO("Try again after 2 seconds." << endl);
+        U244_LOG_ERR(error << ", retry times = " << retry_times);
+        U244_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U244_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U244_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U244_LOG_INFO("Sent UDP packet [size = 244]." << endl);
+    U244_LOG_INFO("Sent UDP packet [size = 244].");
     if (!(u38_retrieved_u244resp(udp_packet_u244resp))) // save the bits for generating the checksum bits in u38 packets.
         return send_u244_pkt(login_username, hostname, local_dns_1, local_dns_2);
     return ret;
@@ -189,16 +189,16 @@ bool udp_dealer::sendalive_u40_1_pkt() {
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_last, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U40_1_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U40_1_LOG_INFO("Try again after 2 seconds." << endl);
+        U40_1_LOG_ERR(error << ", retry times = " << retry_times);
+        U40_1_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U40_1_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U40_1_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40]." << endl);
+    U40_1_LOG_INFO("Sent UDP U40_1 alive packet [size = 40].");
     if (!(u40_retrieved_last(udp_packet_last))) // save the bits for generating the next u40 packets to send.
         return sendalive_u40_1_pkt();
     return ret;
@@ -245,16 +245,16 @@ bool udp_dealer::sendalive_u40_2_pkt() {
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_last, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U40_2_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U40_2_LOG_INFO("Try again after 2 seconds." << endl);
+        U40_2_LOG_ERR(error << ", retry times = " << retry_times);
+        U40_2_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U40_2_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U40_2_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40]." << endl);
+    U40_2_LOG_INFO("Sent UDP U40_2 alive packet [size = 40].");
     return ret;
     // u40_retrieved_last(); //save the bits for generating the next u40 packets to send.
 }
@@ -304,16 +304,16 @@ bool udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_recv, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U38_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U38_LOG_INFO("Try again after 2 seconds." << endl);
+        U38_LOG_ERR(error << ", retry times = " << retry_times);
+        U38_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U38_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U38_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U38_LOG_INFO("Sent UDP U38 alive packet [size = 38]." << endl);
+    U38_LOG_INFO("Sent UDP U38 alive packet [size = 38].");
     return ret;
 }
 
@@ -359,16 +359,16 @@ bool udp_dealer::sendalive_u40_3_pkt() {
     while (!(ret = sock.send_udp_pkt(udp_data_set, udp_packet_recv, error)) && retry_times < MAX_RETRY_TIME)
     {
         retry_times++;
-        U40_3_LOG_ERR(error << ", retry times = " << retry_times << endl);
-        U40_3_LOG_INFO("Try again after 2 seconds." << endl);
+        U40_3_LOG_ERR(error << ", retry times = " << retry_times);
+        U40_3_LOG_INFO("Try again after " << RETRY_SLEEP_TIME << " seconds.");
         sleep(RETRY_SLEEP_TIME);
     }
     if (retry_times == MAX_RETRY_TIME)
     {
-        U40_3_LOG_ERR("Send or Recv failed, stopped." << endl);
+        U40_3_LOG_ERR("Send or Recv failed, stopped.");
         return false;
     }
-    U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40]." << endl);
+    U40_3_LOG_INFO("Sent UDP U40_3 alive packet [size = 40].");
     return ret;
 }
 

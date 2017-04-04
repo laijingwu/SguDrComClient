@@ -1,19 +1,16 @@
 #include "def.h"
-#include "log.h"
 #include "pcap_dealer.h"
 #include "sgudrcom_exception.h"
 
 pcap_dealer::pcap_dealer(string device, vector<uint8_t> mac) {
     char filter[100];
     sprintf(filter, "ether dst %02x:%02x:%02x:%02x:%02x:%02x and ether proto 0x888e", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    pcap_set_timeout(handle,4000);
     init(device, filter);
 }
 
 pcap_dealer::pcap_dealer(string device, uint16_t port) {
     char filter[100];
     sprintf(filter, "udp port %d", port);
-    pcap_set_timeout(handle,4000);
     init(device, filter);
 }
 
@@ -22,18 +19,19 @@ bool pcap_dealer::init(string device, char filter[]) {
     char errbuf[PCAP_ERRBUF_SIZE] = { 0 };
     struct bpf_program fp;
 
-    handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
-
+    pcap_set_timeout(handle, 4000);
 
     try
     {
+        handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
+
         if (handle == NULL) {
-            LOG_INFO("PCAP","Please ensure you have the access to the network devices");
+            cout << "Please ensure you have the access to the network devices." << endl;
             throw sgudrcom_exception("pcap_open_live: " + string(errbuf));
         }
 
         if (pcap_datalink(handle) != DLT_EN10MB) {
-            LOG_INFO("PCAP","Please ensure you have chosen the correct device! You can adjust your setting in drcom.conf!");
+            cout << "Please ensure you have chosen the correct device! You can adjust your setting in drcom.conf!" << endl;
             throw sgudrcom_exception("pcap_datalink: not an Ethernet device.");
         }
 
@@ -45,10 +43,10 @@ bool pcap_dealer::init(string device, char filter[]) {
             throw sgudrcom_exception(string("pcap_setfilter: ") + pcap_geterr(handle));
         }
     }
-    catch(sgudrcom_exception &e)
+    catch(exception &e)
     {
-        LOG_ERR("PCAP",e.what());
-        return false;
+        PCAP_LOG_ERR(e.what());
+        exit(2);
     }
 
     pcap_freecode(&fp);
@@ -60,7 +58,6 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
     {
         if (pcap_sendpacket(handle, &data[0], (int)data.size()) != 0) {
             throw sgudrcom_exception("pcap_sendpacket: " + string(pcap_geterr(handle)));
-            return false;
         }
         struct pcap_pkthdr *header;
         const uint8_t *pkt_data;
@@ -79,9 +76,10 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
             }
         }
     }
-    catch (sgudrcom_exception &e)
+    catch (exception &e)
     {
-        LOG_ERR("PCAP",e.what());
+        *error = e.what();
+        PCAP_LOG_INFO(*error);
         return false;
     }
     return true;
@@ -96,7 +94,8 @@ void pcap_dealer::send_without_response(vector<uint8_t> data, string *error) {
     }
     catch (sgudrcom_exception &e)
     {
-        LOG_ERR("PCAP",e.what());
+        *error = e.what();
+        PCAP_LOG_INFO(*error);
     }
 }
 
@@ -123,7 +122,7 @@ bool pcap_dealer::recv(vector<uint8_t> *success, string *error) {
     }
     catch (sgudrcom_exception &e)
     {
-        LOG_ERR("PCAP",e.what());
+        *error = e.what();
         return false;
     }
     return true;

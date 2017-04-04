@@ -43,7 +43,7 @@ bool eap_login(drcom_config *conf)
     pthread_mutex_unlock(&mutex_status);
     // create udp thread
     if (pthread_create(&t_udp_id, NULL, thread_udp, (void *)conf)) {
-        cerr << "Create udp thread error!" << endl;
+        SYS_LOG_ERR("Create udp thread error!");
         return false;
     }
 	return true;
@@ -53,7 +53,7 @@ void * thread_eap(void *ptr)
 {
     drcom_config *conf = (drcom_config *)ptr;
 
-    EAP_LOG_INFO("Binding for gateway returns." << endl);
+    EAP_LOG_INFO("Binding for gateway returns.");
 
     int ret;
     while (drcom_status == ONLINE)
@@ -62,7 +62,7 @@ void * thread_eap(void *ptr)
         if (ret == 1) // receive failure packet
         {
             if (drcom_status == OFFLINE_PROCESSING) return NULL;
-            EAP_LOG_INFO("Gateway Returns: Failure." << endl);
+            EAP_LOG_INFO("Gateway Returns: Failure.");
             pthread_mutex_lock(&mutex_status);
             drcom_status = OFFLINE; // receive the failure packet, try to reconnect
             pthread_mutex_unlock(&mutex_status);
@@ -118,12 +118,12 @@ int main(int argc, char *argv[])
         else
             settings.ReadFile(config_filename);
 
-        SYS_LOG_INFO("Loaded configuration successfully." << endl);
+        SYS_LOG_INFO("Loaded configuration successfully.");
     }
     catch(exception &e)
     {
-        SYS_LOG_ERR(e.what() << endl);
-        SYS_LOG_INFO("Loading default configuration." << endl);
+        SYS_LOG_ERR(e.what());
+        SYS_LOG_INFO("Loading default configuration.");
     }
 
     // load configuration
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 
 	// create eap thread
 	if (pthread_create(&t_eap_id, NULL, thread_eap, (void *)&conf)) {
-		cerr << "Create eap thread error!" << endl;
+		SYS_LOG_ERR("Create eap thread error!");
 		return 1;
 	}
 
@@ -175,11 +175,11 @@ int main(int argc, char *argv[])
     drcom_status = OFFLINE_PROCESSING;
 
     pthread_join(t_udp_id, NULL); // main thread blocked, waiting the udp thread exit
-    SYS_LOG_INFO("UDP thread has closed. [Done]" << endl);
+    SYS_LOG_INFO("UDP thread has closed. [Done]");
     pthread_join(t_eap_id, NULL); // main thread blocked, waiting the udp thread exit
-    SYS_LOG_INFO("EAP thread has closed. [Done]" << endl);
+    SYS_LOG_INFO("EAP thread has closed. [Done]");
     global_eap_dealer->logoff();
-    SYS_LOG_INFO("Logoff. [Done]" << endl);
+    SYS_LOG_INFO("Logoff. [Done]");
 
     drcom_status = OFFLINE;
     pthread_mutex_unlock(&mutex_status);
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
     if (global_eap_dealer != NULL)
         delete global_eap_dealer;
 
-    SYS_LOG_INFO("Clean up. [Done]" << endl);
+    SYS_LOG_INFO("Clean up. [Done]");
 
 	return 0;
 }

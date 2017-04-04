@@ -13,10 +13,7 @@ using namespace std;
         << "eapol_type = 0x" << std::hex << (int) eap_header->eapol_type                       \
         << ", eap_id = 0x" << std::hex << (int) eap_header->eap_id                             \
         << ", eap_type = 0x" << std::hex << (int) eap_header->eap_type                         \
-        << ", eap_length = " << (int) eap_header->eap_length << endl);
-
-#define EAP_HANDLE_ERROR(step)  EAP_LOG_ERR(step << ": " << error << endl)
-
+        << ", eap_length = " << (int) eap_header->eap_length);
 
 class eap_dealer
 {

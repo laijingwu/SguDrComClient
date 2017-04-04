@@ -56,7 +56,7 @@ struct ether_header eap_dealer::get_eth_header(vector<uint8_t> gateway_mac_t, ve
 }
 
 bool eap_dealer::start() {
-    EAP_LOG_INFO("EAP Start." << endl);
+    EAP_LOG_INFO("EAP Start.");
     vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
     uint8_t eapol_start[] = {
 	    0x01,             // Version: 802.1X-2001
@@ -73,16 +73,16 @@ bool eap_dealer::start() {
 	int retry_times = 0;
 	bool ret;
 
-	while ((ret = pcap.send(pkt_data, &success, &error)) == false && retry_times < MAX_RETRY_TIME)
+	while (!(ret = pcap.send(pkt_data, &success, &error)) && retry_times < MAX_RETRY_TIME)
 	{
 		retry_times++;
-		EAP_LOG_ERR("Failed to perform " << "Start" << ", retry times = " << retry_times << endl);
-		EAP_LOG_INFO("Try to perform " << "Start" << " after 2 seconds." << endl);
-		sleep(2);
+		EAP_LOG_ERR("Failed to perform " << "Start" << ", retry times = " << retry_times);
+		EAP_LOG_INFO("Try to perform " << "Start" << " after " << RETRY_SLEEP_TIME << " seconds.");
+		sleep(RETRY_SLEEP_TIME);
 	}
 	if (retry_times == MAX_RETRY_TIME)
 	{
-		EAP_LOG_ERR("Failed to perfrom " << "Start" << ", stopped." << endl);
+		EAP_LOG_ERR("Failed to perfrom " << "Start" << ", stopped.");
 		return false;
 	}
 	if(ret) {
@@ -100,7 +100,7 @@ bool eap_dealer::start() {
 			// EAP Request                  // EAP Failure
 			if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
 			{
-				EAP_LOG_INFO("Gateway returns: Failue. Try to recv start packet again." << endl);
+				EAP_LOG_INFO("Gateway returns: Failue. Try to recv start packet again.");
 				success.clear();
 				pcap.recv(&success, &error);
 				continue;
@@ -111,7 +111,7 @@ bool eap_dealer::start() {
 			break;
 		}
 		
-		EAP_LOG_INFO("Gateway returns: Request, Identity" << endl);
+		EAP_LOG_INFO("Gateway returns: Request, Identity");
 		resp_eap_id = eap_header->eap_id;
 		// get and save gateway mac address
 		// gateway_mac.clear();
@@ -123,7 +123,7 @@ bool eap_dealer::start() {
 
 bool eap_dealer::response_identity() {
 
-	EAP_LOG_INFO("Response, Identity." << endl);
+	EAP_LOG_INFO("Response, Identity.");
 	vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
 
 	vector<uint8_t> eap_resp_id = {
@@ -156,16 +156,16 @@ bool eap_dealer::response_identity() {
 	int retry_times = 0;
 	bool ret;
 
-	while ((ret = pcap.send(pkt_data, &success, &error)) == false && retry_times < MAX_RETRY_TIME)  //这里有问题。
+	while (!(ret = pcap.send(pkt_data, &success, &error)) && retry_times < MAX_RETRY_TIME)  //这里有问题。
 	{
 		retry_times++;
-		EAP_LOG_ERR("Failed to perform " << "Response, Identity" << ", retry times = " << retry_times << endl);
-		EAP_LOG_INFO("Try to perform " << "Response, Identity" << " after 2 seconds." << endl);
-		sleep(2);
+		EAP_LOG_ERR("Failed to perform " << "Response, Identity" << ", retry times = " << retry_times);
+		EAP_LOG_INFO("Try to perform " << "Response, Identity" << " after " << RETRY_SLEEP_TIME << " seconds.");
+		sleep(RETRY_SLEEP_TIME);
 	}
 	if (retry_times == MAX_RETRY_TIME)
 	{
-		EAP_LOG_ERR("Failed to perfrom " << "Response, Identity" << ", stopped." << endl);
+		EAP_LOG_ERR("Failed to perfrom " << "Response, Identity" << ", stopped.");
 		return false;
 	}
 	if(ret) {
@@ -183,7 +183,7 @@ bool eap_dealer::response_identity() {
 		// EAP Request                  // EAP Failure
 		if (eap_header->eap_code != 0x01) //&& eap_header->eap_code != 0x04
 			return false;
-		EAP_LOG_INFO("Gateway returns: Request, MD5-Challenge EAP" << endl);
+		EAP_LOG_INFO("Gateway returns: Request, MD5-Challenge EAP");
 		resp_md5_eap_id = eap_header->eap_id;
 		resp_md5_attach_key = vector<uint8_t>(eap_header->eap_md5_value, eap_header->eap_md5_value + EAP_MD5_VALUE_SIZE);
 	}
@@ -193,7 +193,7 @@ bool eap_dealer::response_identity() {
 
 bool eap_dealer::response_md5_challenge() {
 
-	EAP_LOG_INFO("Response, MD5-Challenge EAP." << endl);
+	EAP_LOG_INFO("Response, MD5-Challenge EAP.");
 	vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
 
 	vector<uint8_t> eap_resp_md5_ch = {
@@ -232,16 +232,16 @@ bool eap_dealer::response_md5_challenge() {
 	string error;
 	int retry_times = 0;
 	bool ret;
-	while ((ret = pcap.send(pkt_data, &success, &error)) == false && retry_times < MAX_RETRY_TIME)
+	while (!(ret = pcap.send(pkt_data, &success, &error)) && retry_times < MAX_RETRY_TIME)
 	{
 		retry_times++;
-		EAP_LOG_ERR("Failed to perform " << "Response, MD5-Challenge EAP" << ", retry times = " << retry_times << endl);
-		EAP_LOG_INFO("Try to perform " << "Response, MD5-Challenge EAP" << " after 2 seconds." << endl);
-		sleep(2);
+		EAP_LOG_ERR("Failed to perform " << "Response, MD5-Challenge EAP" << ", retry times = " << retry_times);
+		EAP_LOG_INFO("Try to perform " << "Response, MD5-Challenge EAP" << " after " << RETRY_SLEEP_TIME << " seconds.");
+		sleep(RETRY_SLEEP_TIME);
 	}
 	if (retry_times == MAX_RETRY_TIME)
 	{
-		EAP_LOG_ERR("Failed to perfrom " << "Response, MD5-Challenge EAP" << ", stopped." << endl);
+		EAP_LOG_ERR("Failed to perfrom " << "Response, MD5-Challenge EAP" << ", stopped.");
 		return false;
 	}
 	if (ret) {
@@ -268,20 +268,20 @@ bool eap_dealer::response_md5_challenge() {
 			memcpy(&noti[0], ((uint8_t*)eap_header + 4 + 5), // 4 - EAPol Header, 5 - EAP Header
 				   ntohs(eap_header->eap_length) - 5);
 
-			EAP_LOG_INFO("Gateway returns: Request, Notification: " << noti << endl);
+			EAP_LOG_INFO("Gateway returns: Request, Notification: " << noti);
 
 			if (!noti.compare("userid error1"))
-				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account." << endl);
+				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account.");
 
 			if (!noti.compare("userid error3"))
-				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down." << endl);
+				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down.");
 			logoff(); // Need to send a logoff, or the gateway will always send notification
 			return 1; // Don't retry when notification
 		}
 
 		// In fact, this condition is always true
 		if (eap_header->eap_code == 0x03) // Success
-			EAP_LOG_INFO("Gateway returns: Success" << endl);
+			EAP_LOG_INFO("Gateway returns: Success");
 		return true;
 	}
 	return ret;
@@ -312,7 +312,7 @@ int eap_dealer::recv_gateway_returns() {
 		return 1;
 	// EAP Request
 	if (eap_header->eap_type == 0x01) {
-		EAP_LOG_INFO("Gateway returns: Request, Identity" << endl);
+		EAP_LOG_INFO("Gateway returns: Request, Identity");
 		resp_eap_id = eap_header->eap_id;
 		return 0;
 	} // Request, Identity
@@ -350,17 +350,17 @@ bool eap_dealer::alive_identity() {
 
 	pcap.send_without_response(alive_data, &error);
 
-	EAP_LOG_INFO("Active! Response, Identity." << endl);
+	EAP_LOG_INFO("Active! Response, Identity.");
 
 	char ctime[20];
 	sprintf(ctime, "%d", (int)(time(0)-begintime));
-	SYS_LOG_INFO("Heartbeat Packet sent. Online time: " + string(ctime) + "s\n");
+	SYS_LOG_INFO("Heartbeat Packet sent. Online time: " + string(ctime) + "s");
 	return true;	
 }
 
 void eap_dealer::logoff() {
 
-	EAP_LOG_INFO("Logoff." << endl);
+	EAP_LOG_INFO("Logoff.");
 
 	vector<uint8_t> pkt_data(DRCOM_EAP_FRAME_SIZE, 0);
 

@@ -1,4 +1,4 @@
-v#ifndef HEADER_LOG_H_
+#ifndef HEADER_LOG_H_
 #define HEADER_LOG_H_
 
 #include <stddef.h>
@@ -38,14 +38,10 @@ public:
 
         fs.open(filename, ios::app|ios::out);
         if (fs.bad())
-<<<<<<< HEAD
-            throw log_exception("Failed to save log, permission denied.");
-=======
             throw log_exception("Failed to save log.", errno);
->>>>>>> reconstruct
     };
-    void write(string linelog) { fs << linelog; }
-    static void print(string linelog) { cout << linelog; } // cout << linelog << endl;
+    void write(string linelog) { fs << linelog << endl; }
+    static void print(string linelog) { cout << linelog << endl; }
     ~log() { fs.close(); };
     
 private:
@@ -147,6 +143,5 @@ static void print_log(string content)
 #define PCAP_LOG_INFO(info)    LOG_INFO("PCAP", info)
 #define PCAP_LOG_ERR(err)      LOG_ERR("PCAP", err)
 #define PCAP_LOG_DBG(db)       LOG_DBG("PCAP", db)
-
 
 #endif
