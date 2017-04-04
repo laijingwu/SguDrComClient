@@ -6,22 +6,22 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <errno.h>
+// #include <errno.h>
 
-std::vector<uint8_t> get_mac_address(std::string device)
+vector<uint8_t> get_mac_address(string device)
 {
     int sock;
     struct ifreq dev;
     
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        throw sgudrcom_exception("get_mac_address: socket failed");
+        throw sgudrcom_exception("get_mac_address: socket failed", errno);
     }
     
     strncpy(dev.ifr_name, device.c_str(), sizeof(dev.ifr_name));
     dev.ifr_name[sizeof(dev.ifr_name)-1] = '\0';
     
     if (ioctl(sock, SIOCGIFHWADDR, &dev) < 0) {
-        throw sgudrcom_exception("get_mac_address: ioctl failed");
+        throw sgudrcom_exception("get_mac_address: ioctl failed", errno);
     }
     
     std::vector<uint8_t> ret(6, 0);
@@ -29,13 +29,13 @@ std::vector<uint8_t> get_mac_address(std::string device)
     return ret;
 }
 
-std::string get_ip_address(std::string device)
+string get_ip_address(string device)
 {
     struct ifaddrs *ifaddr = NULL;
     std::string ip;
     
     if (getifaddrs(&ifaddr) < 0) {
-        throw sgudrcom_exception("get_ip_address: getifaddrs failed");
+        throw sgudrcom_exception("get_ip_address: getifaddrs failed", errno);
     }
     bool found = false;
     struct ifaddrs * ifa;
@@ -50,7 +50,7 @@ std::string get_ip_address(std::string device)
     }
     
     if (!found) {
-        throw sgudrcom_exception("get_ip_address: NIC '" + device + "' not found.");
+        throw sgudrcom_exception("get_ip_address: NIC '" + device + "' not found.", errno);
     }
     return ip;
 }

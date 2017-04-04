@@ -10,12 +10,15 @@ v#ifndef HEADER_LOG_H_
 #include <sstream>
 using namespace std;
 
-// #define SGUDRCOM_DEBUG
-
 class log_exception : public exception
 {
 public:
     log_exception(const string& message) : message(message) { }
+    log_exception(const string& message, int err) { // system error
+        stringstream stream;
+        stream << message << ", errno = " << err << ", desc: " << strerror(err);
+        this->message = stream.str();
+    }
     const char * what() const throw() { return message.c_str(); }
     virtual ~log_exception() throw() { }
 
@@ -35,10 +38,14 @@ public:
 
         fs.open(filename, ios::app|ios::out);
         if (fs.bad())
+<<<<<<< HEAD
             throw log_exception("Failed to save log, permission denied.");
+=======
+            throw log_exception("Failed to save log.", errno);
+>>>>>>> reconstruct
     };
-    void write(string linelog) { fs << linelog << endl; }
-    static void print(string linelog) { cout << linelog << endl; }
+    void write(string linelog) { fs << linelog; }
+    static void print(string linelog) { cout << linelog; } // cout << linelog << endl;
     ~log() { fs.close(); };
     
 private:

@@ -6,8 +6,8 @@
 #include <string.h>
 using namespace std;
 
-std::vector<uint8_t> get_mac_address(std::string device);
+vector<uint8_t> get_mac_address(string device);
 
-std::string get_ip_address(std::string device);
+string get_ip_address(string device);
 
 #endif

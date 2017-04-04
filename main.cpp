@@ -35,7 +35,7 @@ bool eap_login(drcom_config *conf)
     ) {
         drcom_status = OFFLINE;
         pthread_mutex_unlock(&mutex_status);
-		return false;
+		return eap_login(conf);
     }
 
     // success
@@ -82,6 +82,7 @@ void * thread_udp(void *ptr)
     int counter = 1;
     drcom_config *conf = (drcom_config *)ptr;
 
+    global_udp_dealer->clear_udp_param();
     global_udp_dealer->send_u8_pkt();
     global_udp_dealer->send_u244_pkt(conf->username, "DrCom.Fucker", "223.5.5.5", "114.114.114.114");
     sleep(1);
@@ -107,7 +108,7 @@ void * thread_udp(void *ptr)
 int main(int argc, char *argv[])
 {
     config settings;
-    drcom_config conf = { 0 };
+    drcom_config conf;
     const string config_filename = "drcom.conf";
     try
     {
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
 
         SYS_LOG_INFO("Loaded configuration successfully." << endl);
     }
-    catch(config_exception &e)
+    catch(exception &e)
     {
         SYS_LOG_ERR(e.what() << endl);
         SYS_LOG_INFO("Loading default configuration." << endl);
@@ -158,7 +159,7 @@ int main(int argc, char *argv[])
 	// create eap thread
 	if (pthread_create(&t_eap_id, NULL, thread_eap, (void *)&conf)) {
 		cerr << "Create eap thread error!" << endl;
-		return 2;
+		return 1;
 	}
 
     // control pannel

@@ -9,22 +9,23 @@ using namespace std;
 class udp_dealer
 {
 public:
-	udp_dealer(std::vector<uint8_t> local_mac, std::string local_ip, std::string dst_ip, uint16_t port);
+	udp_dealer(vector<uint8_t> local_mac, string local_ip, string dst_ip, uint16_t port);
 
-	void send_u8_pkt();
-	void send_u244_pkt(std::string login_username, std::string hostname, std::string local_dns_1, std::string local_dns_2);
-	void sendalive_u40_1_pkt();
-	void sendalive_u40_2_pkt();
-	void sendalive_u38_pkt(std::vector<uint8_t> md5_challenge_value);
-	void sendalive_u40_3_pkt();
+	bool send_u8_pkt();
+	bool send_u244_pkt(string login_username, string hostname, string local_dns_1, string local_dns_2);
+	bool sendalive_u40_1_pkt();
+	bool sendalive_u40_2_pkt();
+	bool sendalive_u38_pkt(vector<uint8_t> md5_challenge_value);
+	bool sendalive_u40_3_pkt();
+	
+	void generate_244_chksum(vector<uint8_t> &data_buf);
+	void generate_40_chksum(vector<uint8_t> &data_buf);
+	bool u244_retrieved_u8(vector<uint8_t> &udp_packet_u8resp);
+	bool u40_retrieved_last(vector<uint8_t> &udp_packet_last);
+	bool u38_retrieved_u244resp(vector<uint8_t> &udp_packet_u244resp);
+
 	uint8_t udp_id_counter();
-
-	void generate_244_chksum(std::vector<uint8_t> &data_buf);
-	void generate_40_chksum(std::vector<uint8_t> &data_buf);
-	void u244_retrieved_u8();
-	void u40_retrieved_last();
-	void u38_retrieved_u244resp();
-
+	void clear_udp_param();
 	virtual ~udp_dealer();
 	
 private:
@@ -32,14 +33,14 @@ private:
     uint16_t port_to;
 	uint8_t udp_pkt_id;
 
-	std::vector<uint8_t> local_mac;
-	std::string local_ip;
-	std::string dst_ip;
+	vector<uint8_t> local_mac;
+	string local_ip;
+	string dst_ip;
 
 	uint32_t random_byte;
-	std::vector<uint8_t> u244_checksum;
-	std::vector<uint8_t> u244_retrieved_byte; // u8 response packet(8-11bit)
-	std::vector<uint8_t> u40_retrieved_byte;
+	vector<uint8_t> u244_checksum;
+	vector<uint8_t> u244_retrieved_byte; // u8 response packet(8-11bit)
+	vector<uint8_t> u40_retrieved_byte;
 	uint8_t u38_reserved_byte[3]; // calculated by the retrieved byte from u244 response packet(25-26 and 31 bit)
 };
 
