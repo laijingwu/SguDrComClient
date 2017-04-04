@@ -27,16 +27,13 @@ bool pcap_dealer::init(string device, char filter[]) {
 
     try
     {
-        handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
-
-
         if (handle == NULL) {
             cout << "Please ensure you have the access to the network devices!" << endl;
             throw sgudrcom_exception("pcap_open_live: " + string(errbuf));
         }
 
         if (pcap_datalink(handle) != DLT_EN10MB) {
-            cout << "Please ensure you have chosen the correct device!" << endl;
+            cout << "Please ensure you have chosen the correct device! You can adjust your setting in drcom.conf!" << endl;
             throw sgudrcom_exception("pcap_datalink: not an Ethernet device.");
         }
 
