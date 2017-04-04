@@ -1,4 +1,5 @@
 #include "def.h"
+#include "log.h"
 #include "pcap_dealer.h"
 #include "sgudrcom_exception.h"
 
@@ -20,20 +21,22 @@ bool pcap_dealer::init(string device, char filter[]) {
     const int SNAP_LEN = 1518;
     char errbuf[PCAP_ERRBUF_SIZE] = { 0 };
     struct bpf_program fp;
-<<<<<<< HEAD
+
     handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
-=======
+
 
     try
     {
         handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
->>>>>>> reconstruct
+
 
         if (handle == NULL) {
+            cout << "Please ensure you have the access to the network devices!" << endl;
             throw sgudrcom_exception("pcap_open_live: " + string(errbuf));
         }
 
         if (pcap_datalink(handle) != DLT_EN10MB) {
+            cout << "Please ensure you have chosen the correct device!" << endl;
             throw sgudrcom_exception("pcap_datalink: not an Ethernet device.");
         }
 
@@ -47,7 +50,7 @@ bool pcap_dealer::init(string device, char filter[]) {
     }
     catch(sgudrcom_exception &e)
     {
-        // e.what();
+        LOG_ERR("PCAP",e.what());
         return false;
     }
 
@@ -81,7 +84,7 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.what();
+        LOG_ERR("PCAP",e.what());
         return false;
     }
     return true;
@@ -96,7 +99,7 @@ void pcap_dealer::send_without_response(vector<uint8_t> data, string *error) {
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.what();
+        LOG_ERR("PCAP",e.what());
     }
 }
 
@@ -123,7 +126,7 @@ bool pcap_dealer::recv(vector<uint8_t> *success, string *error) {
     }
     catch (sgudrcom_exception &e)
     {
-        *error = e.what();
+        LOG_ERR("PCAP",e.what());
         return false;
     }
     return true;

@@ -144,4 +144,9 @@ static void print_log(string content)
 #define SYS_LOG_ERR(err)      LOG_ERR("SguDrCom", err)
 #define SYS_LOG_DBG(db)       LOG_DBG("SguDrCom", db)
 
+#define PCAP_LOG_INFO(info)    LOG_INFO("PCAP", info)
+#define PCAP_LOG_ERR(err)      LOG_ERR("PCAP", err)
+#define PCAP_LOG_DBG(db)       LOG_DBG("PCAP", db)
+
+
 #endif
