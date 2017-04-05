@@ -5,7 +5,7 @@ CC=g++ -std=c++11
 main: $(OBJS)
 	$(CC) -g -Wall -o $(EXE) $(OBJS) -lpcap -lpthread
 
-pcap_dealer.o: pcap_dealer.h sgudrcom_exception.h def.h
+pcap_dealer.o: pcap_dealer.h sgudrcom_exception.h def.h log.h
 	$(CC) -c pcap_dealer.cpp
 
 get_device_addr.o: get_device_addr.h def.h sgudrcom_exception.h

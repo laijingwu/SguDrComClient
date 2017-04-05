@@ -1,6 +1,7 @@
 #include "def.h"
 #include "pcap_dealer.h"
 #include "sgudrcom_exception.h"
+#include "log.h"
 
 pcap_dealer::pcap_dealer(string device, vector<uint8_t> mac) {
     char filter[100];
@@ -18,8 +19,6 @@ bool pcap_dealer::init(string device, char filter[]) {
     const int SNAP_LEN = 1518;
     char errbuf[PCAP_ERRBUF_SIZE] = { 0 };
     struct bpf_program fp;
-
-    pcap_set_timeout(handle, 4000);
 
     try
     {
@@ -48,6 +47,8 @@ bool pcap_dealer::init(string device, char filter[]) {
         PCAP_LOG_ERR(e.what());
         exit(2);
     }
+
+    pcap_set_timeout(handle, 4000);
 
     pcap_freecode(&fp);
     return true;
