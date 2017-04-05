@@ -1,4 +1,5 @@
 #include "def.h"
+#include "log.h"
 #include "pcap_dealer.h"
 #include "sgudrcom_exception.h"
 #include "log.h"
@@ -77,7 +78,7 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
             }
         }
     }
-    catch (exception &e)
+    catch (sgudrcom_exception &e)
     {
         *error = e.what();
         PCAP_LOG_INFO(*error);
@@ -124,6 +125,7 @@ bool pcap_dealer::recv(vector<uint8_t> *success, string *error) {
     catch (sgudrcom_exception &e)
     {
         *error = e.what();
+        PCAP_LOG_INFO(*error);
         return false;
     }
     return true;
