@@ -174,8 +174,10 @@ int main(int argc, char *argv[])
     pthread_mutex_lock(&mutex_status);
     drcom_status = OFFLINE_PROCESSING;
 
+    pthread_cancel(t_udp_id);
     pthread_join(t_udp_id, NULL); // main thread blocked, waiting the udp thread exit
     SYS_LOG_INFO("UDP thread has closed. [Done]");
+    pthread_cancel(t_eap_id);
     pthread_join(t_eap_id, NULL); // main thread blocked, waiting the udp thread exit
     SYS_LOG_INFO("EAP thread has closed. [Done]");
     global_eap_dealer->logoff();
