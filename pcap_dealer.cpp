@@ -20,8 +20,6 @@ bool pcap_dealer::init(string device, char filter[]) {
     char errbuf[PCAP_ERRBUF_SIZE] = { 0 };
     struct bpf_program fp;
 
-    pcap_set_timeout(handle, 4000);
-
     try
     {
         handle = pcap_open_live(device.c_str(), SNAP_LEN, 1, 1000, errbuf);
@@ -77,7 +75,7 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
             }
         }
     }
-    catch (exception &e)
+    catch (sgudrcom_exception &e)
     {
         *error = e.what();
         PCAP_LOG_INFO(*error);
@@ -124,6 +122,7 @@ bool pcap_dealer::recv(vector<uint8_t> *success, string *error) {
     catch (sgudrcom_exception &e)
     {
         *error = e.what();
+        PCAP_LOG_INFO(*error);
         return false;
     }
     return true;
