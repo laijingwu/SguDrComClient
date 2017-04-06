@@ -1,9 +1,5 @@
 SGU_OBJS=pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o socket_dealer.o main.o
 SGU_EXE=SguDrcom
-CXX=g++
-CC=gcc
-CXXFLAGS=
-LDFLAGS=
 STDVERSION=-std=c++11
 
 main: $(SGU_OBJS)

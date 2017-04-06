@@ -270,14 +270,17 @@ bool eap_dealer::response_md5_challenge() {
 
 			EAP_LOG_INFO("Gateway returns: Request, Notification: " << noti);
 
-			if (!noti.compare("userid error1"))
-				SYS_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account.");
+			if (!noti.compare("userid error1")) // account doesn't exists
+				SYS_LOG_INFO("Tips: Authentication fails! Your account doesn't exists in auth server.");
 
-			if (!noti.compare("userid error3"))
-				SYS_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down.");
+			if (!noti.compare("userid error3")) // password incorrect
+				SYS_LOG_INFO("Tips: Authentication fails! Incorrect password or your account has arrears down.");
+
+			if (noti.find("PORT err(3)") != string::npos) // static ip address incorrect
+				SYS_LOG_INFO("Tip: Authentication fails! Incorrect static ip address.");
 			
-			if (noti.find("PORT err") != string::npos)
-				SYS_LOG_INFO("Tip: Mac address authentication fails, your account has bind with a mac address which is not current mac address in your machine.");
+			if (noti.find("PORT err(11)") != string::npos) // mac address incorrect
+				SYS_LOG_INFO("Tip: Authentication fails! Incorrect mac address.");
 
 			logoff(); // Need to send a logoff, or the gateway will always send notification
 			exit(3); // Don't retry when notification

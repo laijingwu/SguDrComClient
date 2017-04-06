@@ -7,12 +7,12 @@
 #include <arpa/inet.h>
 
 // We don't know why some version of OpenWrt defines LITTLE ENDIAN but actually use BIG ENDIAN.
-#ifdef OPENWRT
-    #define TO_LITTLE_ENDIAN(n) (((((unsigned long)(n) & 0xFF)) << 24) |        \
-                                ((((unsigned long)(n) & 0xFF00)) << 8) |        \
-                                ((((unsigned long)(n) & 0xFF0000)) >> 8) |      \
-                                ((((unsigned long)(n) & 0xFF000000)) >> 24))
-#endif
+// #ifdef OPENWRT
+//     #define TO_LITTLE_ENDIAN(n) (((((unsigned long)(n) & 0xFF)) << 24) |        \
+//                                 ((((unsigned long)(n) & 0xFF00)) << 8) |        \
+//                                 ((((unsigned long)(n) & 0xFF0000)) >> 8) |      \
+//                                 ((((unsigned long)(n) & 0xFF000000)) >> 24))
+// #endif
 
 vector<uint8_t> get_md5_digest(vector<uint8_t>& data) {
     md5_byte_t digest[16];

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string.h>
 #include <exception>
+#include <errno.h>
 using namespace std;
 
 class sgudrcom_exception : public exception

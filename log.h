@@ -8,6 +8,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <sstream>
+#include <errno.h>
 using namespace std;
 
 class log_exception : public exception

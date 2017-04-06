@@ -110,7 +110,8 @@ bool pcap_dealer::recv(vector<uint8_t> *success, string *error) {
         ret = pcap_next_ex(handle, &header, &pkt_data);
         switch (ret) {
             case 0: // Timeout
-                throw sgudrcom_exception("pcap_next_ex: timeout.");
+                // throw sgudrcom_exception("pcap_next_ex: timeout.");
+                return false;
                 break;
             case 1: // Success
                 (*success).resize(header->len);
