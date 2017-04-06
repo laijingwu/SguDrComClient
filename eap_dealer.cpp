@@ -275,8 +275,11 @@ bool eap_dealer::response_md5_challenge() {
 
 			if (!noti.compare("userid error3"))
 				EAP_LOG_INFO("Tips: Account or password authentication fails, the system does not exist in this account or your account has arrears down.");
+			if (noti.find("PORT err") != string::npos)
+				EAP_LOG_INFO("Tip: Mac address authentication fails, your account has bind with a mac address which is not current mac address in your machine.");
+
 			logoff(); // Need to send a logoff, or the gateway will always send notification
-			return 1; // Don't retry when notification
+			exit(3); // Don't retry when notification
 		}
 
 		// In fact, this condition is always true
