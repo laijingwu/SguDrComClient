@@ -28,7 +28,10 @@ bool eap_login(drcom_config *conf)
 
 	global_eap_dealer->logoff();
 	global_eap_dealer->logoff();
-	sleep(3); // for completing log off.
+    
+    // need to sleep for 3 sec to complete log off, otherwise cannot recieve the start returning packet.
+	sleep(3);
+    
 	if (!global_eap_dealer->start() ||
         !global_eap_dealer->response_identity() ||
         !global_eap_dealer->response_md5_challenge()
@@ -113,7 +116,7 @@ int main(int argc, char *argv[])
     try
     {
         // get config from config file
-        if (argc > 2)
+        if (argc >= 2)
             settings.ReadFile(argv[1]);
         else
             settings.ReadFile(config_filename);
@@ -128,7 +131,7 @@ int main(int argc, char *argv[])
 
     // load configuration
     conf.device = settings.Read("device", string("ens33"));
-    conf.username = settings.Read("username", string("15115011018"));
+    conf.username = settings.Read("username", string("15110000000"));
     conf.password = settings.Read("password", string("111111"));
     conf.authserver_ip = settings.Read("authserver_ip", string("192.168.127.129"));
     conf.udp_alive_port = settings.Read("udp_alive_port", 61440);

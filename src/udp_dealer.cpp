@@ -57,6 +57,10 @@ bool udp_dealer::send_u244_pkt(string login_username, string hostname, string lo
     vector<uint8_t> udp_data_set;
     uint16_t data_length = 244;
 
+#ifdef OPENWRT
+    data_length = UINT16_LITTLE_ENDIAN(data_length);
+#endif
+
     /*************************** Packet info part *******************************/
     udp_data_set.push_back(0x07); // fixed
     udp_data_set.push_back(udp_id_counter()); // packet counter
@@ -160,6 +164,10 @@ bool udp_dealer::sendalive_u40_1_pkt() {
     vector<uint8_t> udp_data_set;
     uint16_t data_length = 40;
 
+#ifdef OPENWRT
+    data_length = UINT16_LITTLE_ENDIAN(data_length);
+#endif
+
     udp_data_set.push_back(0x07); // fixed
     udp_data_set.push_back(udp_id_counter()); // packet counter
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
@@ -206,6 +214,10 @@ bool udp_dealer::sendalive_u40_1_pkt() {
 
 bool udp_dealer::sendalive_u40_2_pkt() {
     uint16_t data_length = 40;
+
+#ifdef OPENWRT
+    data_length = UINT16_LITTLE_ENDIAN(data_length);
+#endif
 
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -294,6 +306,11 @@ bool udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
 
     udp_data_set.insert(udp_data_set.end(), 2, 0x00);
     time_t current_time = time(0);
+
+#ifdef OPENWRT
+    current_time = UINT32_LITTLE_ENDIAN(current_time);
+#endif
+
     memcpy(&udp_data_set[36], &current_time, 2);  //last 2 bit of the unix time system
     /////////////////////////////// Data set end /////////////////////////////////
 
@@ -319,6 +336,10 @@ bool udp_dealer::sendalive_u38_pkt(vector<uint8_t> md5_challenge_value) {
 
 bool udp_dealer::sendalive_u40_3_pkt() {
     uint16_t data_length = 40;
+
+#ifdef OPENWRT
+    data_length = UINT16_LITTLE_ENDIAN(data_length);
+#endif
 
     ////////////////////////////// Data set begin ////////////////////////////////
     vector<uint8_t> udp_data_set;
@@ -385,14 +406,23 @@ void udp_dealer::generate_40_chksum(vector<uint8_t> &data_buf) {
     uint16_t mid = 0;
     for (int i = 0; i < 20; i++) {
         memcpy(&tmp, &data_buf[2*i], 2);
+#ifdef OPENWRT
+        tmp = UINT16_LITTLE_ENDIAN(tmp);
+#endif
         mid ^= tmp;
     }
     uint32_t result = uint32_t(mid)*711;
+#ifdef OPENWRT
+    result = UINT32_LITTLE_ENDIAN(result);
+#endif
     memcpy(&data_buf[24], &result , 4);
 }
 
 void udp_dealer::generate_244_chksum(vector<uint8_t> &data_buf) {
     uint32_t drcom_protocol_param  = 20000711;
+#ifdef OPENWRT
+    drcom_protocol_param = UINT32_LITTLE_ENDIAN(drcom_protocol_param);
+#endif
     memcpy(&data_buf[24], &drcom_protocol_param, 4);
     data_buf[28] = 126;
 
@@ -401,11 +431,17 @@ void udp_dealer::generate_244_chksum(vector<uint8_t> &data_buf) {
     uint32_t mid = 0;
     for (int i = 0; i < (len >> 2); i++) {
         memcpy(&tmp, &data_buf[4 * i], 4);
+#ifdef OPENWRT
+        tmp = UINT32_LITTLE_ENDIAN(tmp);
+#endif
         mid ^= tmp;
     }
 
     data_buf[28] = 0;
     uint32_t result = mid * 19680126;
+#ifdef OPENWRT
+    result = UINT32_LITTLE_ENDIAN(result);
+#endif
     memcpy(&data_buf[24], &result, 4);
 }
 

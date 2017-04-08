@@ -1,9 +1,13 @@
 SGU_OBJS=pcap_dealer.o get_device_addr.o eap_dealer.o md5.o utils.o udp_dealer.o config.o socket_dealer.o main.o
 SGU_EXE=SguDrcom
+CXX=g++
+CC=gcc
+CXXFLAGS=
+LDFLAGS=
 STDVERSION=-std=c++11
 
 main: $(SGU_OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(STDVERSION) -g -Wall -o $(SGU_EXE) $(SGU_OBJS) -lpcap -lpthread
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -Os -s $(STDVERSION) -o $(SGU_EXE) $(SGU_OBJS) -lpcap -lpthread
 
 pcap_dealer.o: pcap_dealer.h sgudrcom_exception.h def.h log.h
 	$(CXX) $(CXXFLAGS) $(STDVERSION) -c pcap_dealer.cpp

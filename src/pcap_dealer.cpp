@@ -48,8 +48,6 @@ bool pcap_dealer::init(string device, char filter[]) {
         exit(2);
     }
 
-    pcap_set_timeout(handle, 4000);
-
     pcap_freecode(&fp);
     return true;
 }
@@ -60,13 +58,17 @@ bool pcap_dealer::send(vector<uint8_t> data, vector<uint8_t> *success, string *e
         if (pcap_sendpacket(handle, &data[0], (int)data.size()) != 0) {
             throw sgudrcom_exception("pcap_sendpacket: " + string(pcap_geterr(handle)));
         }
+        
+        sleep(1); // need to sleep, we don't know why openwrt cannot recieve packets timely.
+
         struct pcap_pkthdr *header;
         const uint8_t *pkt_data;
 
         int ret = pcap_next_ex(handle, &header, &pkt_data);
         switch (ret) {
             case 0: // Timeout
-                throw sgudrcom_exception("pcap_next_ex: timeout.");
+                // throw sgudrcom_exception("pcap_next_ex: timeout.");
+                return false;
                 break;
             case 1: // Success
                 (*success).resize(header->len);

@@ -30,23 +30,23 @@ private:
 class log
 {
 public:
-    log() : fs() {
+    log() { // : fs()
         time_t now = time(NULL);
         struct tm* time = localtime(&now);
 
         char filename[32];
         sprintf(filename, "%4d-%02d-%02d.log", 1900 + time->tm_year, 1 + time->tm_mon, time->tm_mday);
 
-        fs.open(filename, ios::app|ios::out);
-        if (fs.bad())
-            throw log_exception("Failed to save log.", errno);
+        //fs.open(filename, ios::app|ios::out);
+        //if (fs.bad())
+        //    throw log_exception("Failed to save log.", errno);
     };
-    void write(string linelog) { fs << linelog << endl; }
+    //void write(string linelog) { fs << linelog << endl; }
     static void print(string linelog) { cout << linelog << endl; }
-    ~log() { fs.close(); };
+    ~log() { }; // fs.close();
     
 private:
-    ofstream fs;
+    //ofstream fs;
 };
 
 static inline string log_now()
@@ -70,20 +70,20 @@ static inline string log_now()
 
 static void print_log(string content)
 {
-    log *drcom_log;
-    try
-    {
-        drcom_log = new log();
-        drcom_log->write(content);
-    }
-    catch(log_exception &e)
-    {
-        std::stringstream error_ss;
-        error_ss << log_now() << " [Log Error] " << e.what() << endl;
-        log::print(error_ss.str());
-    }
+    //log *drcom_log;
+    // try
+    // {
+    //     drcom_log = new log();
+    //     drcom_log->write(content);
+    // }
+    // catch(log_exception &e)
+    // {
+    //     std::stringstream error_ss;
+    //     error_ss << log_now() << " [Log Error] " << e.what() << endl;
+    //     log::print(error_ss.str());
+    // }
     log::print(content);
-    if (drcom_log != NULL) delete drcom_log;
+    //if (drcom_log != NULL) delete drcom_log;
 }
 
 #define LOG {                                                        \

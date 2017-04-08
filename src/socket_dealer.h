@@ -2,8 +2,8 @@
 #define SOCKET_DEALER_H_
 
 #include "def.h"
-// #include <sys/socket.h>
-// #include <netinet/in.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/select.h>

@@ -9,8 +9,9 @@
 #include <vector>
 #include <string.h>
 
-#define SGUDRCOM_DEBUG
-const int SOCKET_TIMEOUT_MILISEC = 2000;
+// #define SGUDRCOM_DEBUG
+// #define OPENWRT
+const int SOCKET_TIMEOUT_MILISEC = 5000;
 const int MAX_RETRY_TIME = 2;
 const int RETRY_SLEEP_TIME = 2;
 
