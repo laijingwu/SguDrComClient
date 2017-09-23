@@ -20,8 +20,10 @@ ONLINE_STATE drcom_status = OFFLINE;
 
 bool eap_login(drcom_config *conf)
 {
-    if (t_udp_id != 0)
+    if (t_udp_id != 0) {
+        pthread_cancel(t_udp_id);
         pthread_join(t_udp_id, NULL);
+    }
 
     pthread_mutex_lock(&mutex_status);
     drcom_status = ONLINE_PROCESSING;
@@ -29,8 +31,8 @@ bool eap_login(drcom_config *conf)
 	global_eap_dealer->logoff();
 	global_eap_dealer->logoff();
     
-    // need to sleep for 3 sec to complete log off, otherwise cannot recieve the start returning packet.
-	sleep(3);
+    // need to sleep for 4 sec to complete log off, otherwise cannot recieve the start returning packet.
+	sleep(4);
     
 	if (!global_eap_dealer->start() ||
         !global_eap_dealer->response_identity() ||
@@ -91,15 +93,36 @@ void * thread_udp(void *ptr)
     sleep(1);
     while(drcom_status == ONLINE)
     {
-        global_udp_dealer->sendalive_u40_1_pkt();
+        if (drcom_status == OFFLINE_PROCESSING) return NULL;
+        if (!global_udp_dealer->sendalive_u40_1_pkt()) {
+            if (drcom_status != ONLINE) return NULL;
+            global_eap_dealer->logoff();
+            SOCKET_LOG_INFO("Called to re-login.");
+            return NULL;
+        }
         usleep(50000); // 50ms
-        global_udp_dealer->sendalive_u40_2_pkt();
+        if (!global_udp_dealer->sendalive_u40_2_pkt()) {
+            if (drcom_status != ONLINE) return NULL;
+            global_eap_dealer->logoff();
+            SOCKET_LOG_INFO("Called to re-login.");
+            return NULL;
+        }
         sleep(6);
-        global_udp_dealer->sendalive_u38_pkt(global_eap_dealer->md5_value);
+        if (!global_udp_dealer->sendalive_u38_pkt(global_eap_dealer->md5_value)) {
+            if (drcom_status != ONLINE) return NULL;
+            global_eap_dealer->logoff();
+            SOCKET_LOG_INFO("Called to re-login.");
+            return NULL;
+        }
         sleep(3);
         if (counter >= 10)
         {
-            global_udp_dealer->sendalive_u40_3_pkt();
+            if (!global_udp_dealer->sendalive_u40_3_pkt()) {
+                if (drcom_status != ONLINE) return NULL;
+                global_eap_dealer->logoff();
+                SOCKET_LOG_INFO("Called to re-login.");
+                return NULL;
+            }
             counter = 1;
             sleep(1);
         }
@@ -110,6 +133,7 @@ void * thread_udp(void *ptr)
 
 int main(int argc, char *argv[])
 {
+	sleep(2);
     config settings;
     drcom_config conf;
     const string config_filename = "drcom.conf";

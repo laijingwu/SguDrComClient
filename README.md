@@ -6,7 +6,9 @@
 
 基于本核心重构的 *MacOS GUI* 版：[Zhou-Haowei/SguDrcomClientGUI](https://github.com/Zhou-Haowei/SguDrcomClientGUI)
 
-Current Version: v1.0
+Current Version: <u>v1.1</u>
+
+OpenWrt 部署过程可参考：[Steven's Blog](https://pcap.xyz/86.html)
 
 ### Configurate
 
@@ -29,6 +31,12 @@ sudo route add -net 192.168.0.0 netmask 255.255.0.0 gw 192.168.x.254
 # x 为所设置的静态IP的第三组数字，且需要以管理员权限执行。
 ```
 
+#### OpenWrt 配置开机启动
+
+`sgudrcom`  文件为开机脚本，修改其中的配置文件地址后，复制该文件到 /etc/init.d/sgudrcom 中，并执行
+
+`/etc/init.d/sgudrcom enable`
+
 ### Compile
 
 Linux:
@@ -50,6 +58,8 @@ sudo ./SguDrcom drcom.conf	# drcom.conf 为配置文件路径
 编译环境依赖于 **gcc、g++** 编译器，请确保已安装正确的编译器。
 
 <u>Ubuntu 16.04 LTS（测试编译通过）</u>
+
+**适配 OpenWrt 15.05.1 的 ar71xx 和 mt7620 架构可无需编译，从 tag 中下载 ipk 安装包即可。**
 
 ### Special Thanks
 

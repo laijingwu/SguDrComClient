@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+# Sgu Drcom Client init script
+
+START = 99
+
+start(){
+	SguDrcom /root/drcom.conf
+	echo "Sgu Drcom Client started!"
+}
+
+stop(){
+	killall SguDrcom
+	echo "Sgu Drcom Client stopped!"
+}
+
+restart(){
+	stop
+	start
+}
