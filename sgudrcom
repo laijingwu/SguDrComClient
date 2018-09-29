@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 # Sgu Drcom Client init script
 
-START = 99
+START=99
 
 start(){
 	SguDrcom /root/drcom.conf
