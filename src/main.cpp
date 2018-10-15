@@ -30,10 +30,10 @@ bool eap_login(drcom_config *conf)
 
 	global_eap_dealer->logoff();
 	global_eap_dealer->logoff();
-    
+
     // need to sleep for 4 sec to complete log off, otherwise cannot recieve the start returning packet.
 	sleep(4);
-    
+
 	if (!global_eap_dealer->start() ||
         !global_eap_dealer->response_identity() ||
         !global_eap_dealer->response_md5_challenge()
@@ -78,7 +78,7 @@ void * thread_eap(void *ptr)
             global_eap_dealer->alive_identity();
         }
         // -2: catch the wrong packet, continue capturing packets.
-        // -1: receive packet timeout, continue capturing packets. 
+        // -1: receive packet timeout, continue capturing packets.
     }
 }
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     cout << "******** Drcom Info ********" << endl;
     cout << "device: " << conf.device << endl;
     cout << "username: " << conf.username << endl;
-    cout << "password: " << conf.password << endl;
+    cout << "password: " << "*******" << endl; // conf.password
     cout << "local ip: " << local_ip << endl;
     cout << "local mac: " << hex_to_str(local_mac_array, local_mac.size(), ':') << endl;
     cout << "****************************" << endl;
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     pthread_mutex_init(&mutex_status, NULL);
 	global_eap_dealer = new eap_dealer(conf.device, broadcast_mac, local_mac, local_ip, conf.username, conf.password);
     global_udp_dealer = new udp_dealer(local_mac, local_ip, conf.authserver_ip, conf.udp_alive_port);
-    
+
     // login
 	eap_login(&conf);
 
@@ -191,11 +191,14 @@ int main(int argc, char *argv[])
 
     // control pannel
     string s;
-    while (true)
+    while (cin >> s)
     {
-        cin >> s;
         if (s == "quit") break;
         if (s == "version") cout << "Sgu DrCom Client v1.0" << endl;
+    }
+
+    while (s != "quit") {
+      sleep(1000);
     }
 
     pthread_mutex_lock(&mutex_status);
